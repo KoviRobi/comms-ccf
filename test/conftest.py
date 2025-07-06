@@ -57,7 +57,15 @@ class CobsEncoder(StrStructure):
     ]
 
 
+class CobsDecoder(StrStructure):
+    _fields_ = [
+        ("runLength", c_ubyte),
+        ("remaining", c_bool),
+    ]
+
+
 CobsEncoder_p = POINTER(CobsEncoder)
+CobsDecoder_p = POINTER(CobsDecoder)
 
 
 class LibCobs:
@@ -76,6 +84,24 @@ class LibCobs:
         self.lib.cobsEncode.restype = c_size_t
         self.cobsEncode = self.lib.cobsEncode
 
+        self.lib.cobsDecoderNew.argtypes = []
+        self.lib.cobsDecoderNew.restype = CobsDecoder_p
+        self.cobsDecoderNew = self.lib.cobsDecoderNew
+
+        self.lib.cobsDecoderDelete.argtypes = [CobsDecoder_p]
+        self.lib.cobsDecoderDelete.restype = None
+        self.cobsDecoderDelete = self.lib.cobsDecoderDelete
+
+        self.lib.cobsDecode.argtypes = [
+            CobsDecoder_p,
+            c_bytes_p,
+            c_size_t,
+            c_bytes_p,
+            c_size_t,
+        ]
+        self.lib.cobsDecode.restype = c_size_t
+        self.cobsDecode = self.lib.cobsDecode
+
     def encode(self, data: bytes) -> bytes:
         state = self.cobsEncoderNew(data, len(data))
         out_len = cobs.max_encoded_length(len(data))
@@ -85,6 +111,16 @@ class LibCobs:
         finally:
             self.cobsEncoderDelete(state)
         return buf.raw[:enc_len]
+
+    def decode(self, data: bytes) -> bytes:
+        out_len = len(data)
+        buf = create_string_buffer(out_len)
+        state = self.cobsDecoderNew()
+        try:
+            dec_len = self.cobsDecode(state, data, len(data), buf, len(buf))
+        finally:
+            self.cobsDecoderDelete(state)
+        return buf.raw[:dec_len]
 
 
 @pytest.fixture(scope="session")

@@ -1,7 +1,7 @@
 import pytest
 from cobs import cobs
 from conftest import LibCobs, create_string_buffer
-from hypothesis import given
+from hypothesis import given, example
 from hypothesis import strategies as st
 
 
@@ -42,3 +42,13 @@ def test_edge_case_bigger_buffer(libcobs: LibCobs, data):
     finally:
         libcobs.cobsEncoderDelete(state)
     assert buf.raw[:enc_len] == cobs.encode(data)
+
+
+@given(st.binary())
+@example(b"")
+@example(b"\0\0\0\0test\0\0\0\0")
+@example(b"\0" * 256)
+@example(b"\1" * 256)
+def test_decode(libcobs: LibCobs, data):
+    encoded = cobs.encode(data)
+    assert libcobs.decode(encoded) == data

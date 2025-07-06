@@ -94,4 +94,37 @@ namespace Cobs
         bool atEnd = (runIndex == data.size()) && runHeaderOutput;
         return !atEnd;
     }
+
+    bool Decoder::feed(uint8_t byte)
+    {
+        bool skip = runLengthWasMax && runLength == 0;
+        if (byte == 0)
+        {
+            /// We reached an unescaped zero byte, our caller should
+            /// already know we are at the end -- reset for decoding
+            /// next frame
+            runLength = 0;
+            runLengthWasMax = true;
+            /// And don't say skip, to emit the null and not process the
+            /// next byte
+            return true;
+        }
+        else if (runLength == 0)
+        {
+            debugf("runLength == 0 at byte %02X\n", byte);
+            runLength = byte;
+            runLengthWasMax = runLength - 1 == maxRunLength;
+        }
+        --runLength;
+        return !skip;
+    }
+
+    uint8_t Decoder::get(uint8_t byte) const
+    {
+        if (runLength == 0)
+        {
+            return 0;
+        }
+        return byte;
+    }
 };

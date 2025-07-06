@@ -94,4 +94,21 @@ namespace Cobs
         bool runHeaderOutput = false;
     };
     static_assert(std::input_iterator<Encoder>);
+
+    class Decoder
+    {
+    public:
+        /// Feeds a character to the state-machine, returning whether that
+        /// character is to be emitted, or only causing an internal transition
+        bool feed(uint8_t byte);
+
+        /// Get the current character, should be called before feed, with the
+        /// same byte that will be fed. But it is only valid if `feed` returns
+        /// true, otherwise it should be ignored.
+        uint8_t get(uint8_t byte) const;
+
+    private:
+        uint8_t runLength = 0;
+        bool runLengthWasMax = true;
+    };
 };
