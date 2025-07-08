@@ -33,6 +33,7 @@ def pointerValue(pointer) -> int:
 
 def pytest_addoption(parser):
     parser.addoption("--libcobs", action="store", type=Path)
+    parser.addoption("--libfnv1a", action="store", type=Path)
 
 
 class StrStructure(Structure):
@@ -129,3 +130,25 @@ def libcobs(request):
     if not opt:
         pytest.skip()
     return LibCobs(opt)
+
+
+class LibFnv1a:
+    def __init__(self, lib_path: Path):
+        self.lib = cdll.LoadLibrary(str(lib_path))
+
+        self.lib.fnv1aHash.argtypes = [c_bytes_p, c_size_t]
+        self.lib.fnv1aHash.restype = c_uint32
+        self.fnv1aHash = self.lib.fnv1aHash
+
+    def hash(self, data: bytes) -> int:
+        out_len = len(data)
+        state = self.fnv1aHash(data, len(data))
+        return state
+
+
+@pytest.fixture(scope="session")
+def libfnv1a(request):
+    opt = request.config.getoption("--libfnv1a")
+    if not opt:
+        pytest.skip()
+    return LibFnv1a(opt)

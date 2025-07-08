@@ -19,7 +19,7 @@ target_include_directories(cobs PUBLIC comms-ccf/ test/)
 
 enable_testing()
 
-set(components cobs)
+set(components cobs fnv1a)
 
 set(test_args "")
 foreach(component IN LISTS components)
