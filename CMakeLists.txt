@@ -17,6 +17,9 @@ string(APPEND CMAKE_CXX_FLAGS " -fconcepts-diagnostics-depth=2")
 add_executable(cobs comms-ccf/cobs.cpp test/cobs.cpp)
 target_include_directories(cobs PUBLIC comms-ccf/ test/)
 
+add_executable(circular_buffer test/circular_buffer.cpp)
+target_include_directories(circular_buffer PUBLIC comms-ccf/ test/)
+
 enable_testing()
 
 set(components cobs fnv1a)
