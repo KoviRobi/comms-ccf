@@ -46,6 +46,21 @@ namespace Packetizer
     ///         // Use packet
     ///     }
     /// }
+    /// std::array<uint8_t, MAX_PKT_SIZE> buf
+    /// while (true)
+    /// {
+    ///     Cobs::Decoder decoder;
+    ///     auto [_, buf_end] = std::copy(UART_RX_ITERATOR | decoder, buf);
+    ///     auto span = std::span{buf.begin(), buf_end);
+    ///     if (decoder.done() && Packetizer::checksum(span))
+    ///     {
+    ///         uint8_t channel = span[0];
+    ///         if (handlers[channel])
+    ///         {
+    ///             handlers[channel](span.subspan(1));
+    ///         }
+    ///     }
+    /// }
     /// ```
     class Receive
     {
