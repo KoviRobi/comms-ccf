@@ -114,7 +114,45 @@ static_assert(
     std::output_iterator<Split<char, char*, char*>::Iterator, char>
 );
 
+template<typename Fn, typename B, typename E>
+class TransformIterator
+{
+public:
+    using value_type = typename std::iter_value_t<B>;
+    using difference_type = typename std::iter_difference_t<B>;
+
+    TransformIterator(Fn && fn_, B && b, E && e)
+        : fn(fn_), begin_(b), end_(e) { }
+
+    TransformIterator & operator*() const { return *this; }
+    TransformIterator & operator++() { ++*begin_; return *this; }
+    TransformIterator & operator++(int) { auto tmp = *this; ++*begin_; return tmp; }
+    TransformIterator & operator=(const value_type & value)
+    {
+        *begin_ = fn(value);
+    }
+
+private:
+    Fn fn;
+    B begin_;
+    E end_;
+};
+
+template<typename Fn>
 class Transform
 {
 public:
+    Transform(Fn && _fn) : fn(std::forward<Fn>(_fn)) { }
+
+    template<typename B, typename E>
+    TransformIterator<Fn, B, E> operator()(B && b, E && e)
+    {
+        return TransformIterator<Fn, B, E>(fn, std::forward<B>(b), std::forward<E>(e));
+    }
+
+private:
+    Fn fn;
 };
+static_assert(
+    std::output_iterator<TransformIterator<char(*)(char), char*, char*>, char>
+);
