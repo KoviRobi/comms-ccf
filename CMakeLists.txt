@@ -7,18 +7,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON
 set(CMAKE_BUILD_TYPE Debug
     CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ...")
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
+# Note, if CMAKE_CXX_STANDARD is less than 23 then
+# string(APPEND CMAKE_CXX_FLAGS " -DNO_FLOAT16")
 
 project(comms-ccf CXX)
 
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -g3 -Og")
 string(APPEND CMAKE_CXX_FLAGS " -fconcepts-diagnostics-depth=2")
 
-add_executable(cobs comms-ccf/cobs.cpp test/cobs.cpp)
+add_executable(cobs test/cobs.cpp comms-ccf/cobs.cpp)
 target_include_directories(cobs PUBLIC comms-ccf/ test/)
 
 add_executable(circular_buffer test/circular_buffer.cpp)
 target_include_directories(circular_buffer PUBLIC comms-ccf/ test/)
+
+add_executable(cbor test/cbor.cpp comms-ccf/cbor.cpp)
+target_include_directories(cbor PUBLIC comms-ccf/ test/)
 
 enable_testing()
 
