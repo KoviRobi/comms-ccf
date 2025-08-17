@@ -32,6 +32,9 @@ MEMORY
     SRAM (rwx) : ORIGIN = 0x20000000, LENGTH = 64K
 }
 
+begin = ORIGIN(SRAM);
+end = ORIGIN(SRAM) + LENGTH(SRAM);
+
 SECTIONS
 {
     .text :

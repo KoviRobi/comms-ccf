@@ -20,11 +20,21 @@
       "name": "release",
       "inherits": "defaults",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "minsizerel",
+      "inherits": "defaults",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
     }
   ],
   "buildPresets": [
+    { "name": "run", "hidden": true, "targets": ["run"] },
     { "name": "debug", "configurePreset": "debug" },
-    { "name": "release", "configurePreset": "release" }
+    { "name": "release", "configurePreset": "release" },
+    { "name": "minsizerel", "configurePreset": "minsizerel" },
+    { "name": "run-debug", "inherits": ["debug", "run"] },
+    { "name": "run-release", "inherits": ["release", "run"] },
+    { "name": "run-minsizerel", "inherits": ["minsizerel", "run"] }
   ],
   "workflowPresets": [
     {
@@ -39,6 +49,34 @@
       "steps": [
         { "type": "configure", "name": "release" },
         { "type": "build", "name": "release" }
+      ]
+    },
+    {
+      "name": "minsizerel",
+      "steps": [
+        { "type": "configure", "name": "minsizerel" },
+        { "type": "build", "name": "minsizerel" }
+      ]
+    },
+    {
+      "name": "run-debug",
+      "steps": [
+        { "type": "configure", "name": "debug" },
+        { "type": "build", "name": "run-debug" }
+      ]
+    },
+    {
+      "name": "run-release",
+      "steps": [
+        { "type": "configure", "name": "release" },
+        { "type": "build", "name": "run-release" }
+      ]
+    },
+    {
+      "name": "run-minsizerel",
+      "steps": [
+        { "type": "configure", "name": "minsizerel" },
+        { "type": "build", "name": "run-minsizerel" }
       ]
     }
   ]

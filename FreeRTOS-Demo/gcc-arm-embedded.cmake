@@ -25,7 +25,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 set(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m3 -mthumb")
-set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} --specs=nano.specs")
+set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} --specs=nano.specs --specs=nosys.specs")
 
 foreach(compiler IN ITEMS CXX C ASM)
     set(CMAKE_${compiler}_FLAGS_DEBUG " -Og -gdwarf-2 -g3" CACHE STRING

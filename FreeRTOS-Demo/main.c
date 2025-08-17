@@ -78,10 +78,6 @@ void vApplicationIdleHook(void)
     asm volatile("wfi");
 }
 
-/*
- * Basic polling UART write function.
- */
-static void prvPrintString( const char * pcString );
 
 /*-----------------------------------------------------------*/
 
@@ -92,6 +88,8 @@ static void prvPrintString( const char * pcString );
 *************************************************************************/
 int main( void )
 {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    fprintf(stderr, "Hello, world!\n");
     /* Initialise the trace recorder.  Use of the trace recorder is optional.
      * See http://www.FreeRTOS.org/trace for more information and the comments at
      * the top of this file regarding enabling trace in this demo.
@@ -232,15 +230,14 @@ void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
 }
 /*-----------------------------------------------------------*/
 
-char * _sbrk_r( struct _reent * r,
-                int incr )
+#include <sys/unistd.h>
+
+_ssize_t _write (int, const void * p, size_t len)
 {
-    /* Just to keep the linker quiet. */
-    ( void ) r;
-    ( void ) incr;
-
-    /* Check this function is never called by forcing an assert() if it is. */
-    configASSERT( incr == -1 );
-
-    return NULL;
+    const char * s = p;
+    for (int i = 0; i < len; ++i)
+    {
+        UARTCharPut(UART0_BASE, s[i]);
+    }
+    return len;
 }
