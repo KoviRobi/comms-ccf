@@ -48,4 +48,36 @@ namespace Fnv1a
         }
         return hash;
     }
+
+    template<size_t Size>
+    constexpr void putAtEnd(std::span<uint8_t, Size> span)
+    {
+        size_t end = span.size();
+        if (end < 4)
+        {
+            return;
+        }
+        const uint32_t got = checksum(span.first(end - 4));
+        span[end - 4] = static_cast<uint32_t>(got) >>  0;
+        span[end - 3] = static_cast<uint32_t>(got) >>  8;
+        span[end - 2] = static_cast<uint32_t>(got) >> 16;
+        span[end - 1] = static_cast<uint32_t>(got) >> 24;
+    }
+
+    template<size_t Size>
+    constexpr bool checkAtEnd(std::span<uint8_t, Size> span)
+    {
+        size_t end = span.size();
+        if (end < 4)
+        {
+            return false;
+        }
+        const uint32_t got = checksum(span.first(end - 4));
+        const uint32_t expected =
+                (static_cast<uint32_t>(span[end - 4]) <<  0) |
+                (static_cast<uint32_t>(span[end - 3]) <<  8) |
+                (static_cast<uint32_t>(span[end - 2]) << 16) |
+                (static_cast<uint32_t>(span[end - 1]) << 24);
+        return got == expected;
+    }
 };

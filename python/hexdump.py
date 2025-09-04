@@ -1,7 +1,7 @@
-def hexdump(data: bytes) -> str:
+def hexdump(data: bytes, prefix="") -> str:
     ret = ""
     for line in range(0, len(data), 16):
-        ret += f"{line:04X}: "
+        ret += f"{prefix}{line:04X}: "
         for col in range(0, 16):
             if col == 0: pass
             elif (col & 7) == 0: ret += "    "

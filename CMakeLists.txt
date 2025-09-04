@@ -54,6 +54,18 @@ add_build_and_test(
     COMMAND $<TARGET_FILE:cbor> "${CMAKE_CURRENT_LIST_DIR}/comms-ccf/cbor.hpp"
 )
 
+# Demo of RPC calls by encoding/decoding in Python
+add_executable(rpc test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_include_directories(rpc PUBLIC comms-ccf/)
+add_build_and_test(
+    NAME rpc_demo
+    DEPENDS rpc
+    COMMAND
+        "${CMAKE_CURRENT_LIST_DIR}/python/async_subprocess.py"
+        $<TARGET_FILE:rpc>
+        -v
+)
+
 add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)
 target_include_directories(cobs_wrapper PUBLIC comms-ccf/ test/)
 add_library(fnv1a_wrapper SHARED test/fnv1a_wrapper.cpp)

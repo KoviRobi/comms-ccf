@@ -66,6 +66,7 @@ TODO: Forward and bidirectional iterator/range for Iterator/Notification.
 #include <array>
 #include <bit>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 template<typename Value, size_t Size, size_t MaxPacketSize>
@@ -93,6 +94,8 @@ public:
     /// forwarding to work for `const Value &` and also `Value &&`
     /// references.
     template<typename Value_>
+        // Here to avoid an extra copy of the code with int for e.g. uint8_t
+        requires std::same_as<std::remove_cvref_t<Value>, std::remove_cvref_t<Value_>>
     void push_back(Value_ && v)
     {
         if (unnotified() >= MaxPacketSize || size() >= capacity())
