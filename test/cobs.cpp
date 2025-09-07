@@ -1,0 +1,36 @@
+#include "cobs.hpp"
+
+#include "hexdump.hpp"
+
+#include <stdint.h>
+#include <stdio.h>
+
+#include <array>
+#include <span>
+
+int main()
+{
+    std::array<uint8_t, 1> buf;
+    size_t i = 0;
+    for (auto & byte : buf)
+    {
+        byte = (i++ % 255) + 1;
+    }
+    std::array<uint8_t, Cobs::maxEncodedSize(buf.size())> enc;
+
+    i = 0;
+    for (auto byte : Cobs::Encoder(std::span{buf}))
+    {
+        if (i == enc.size())
+        {
+            break;
+        }
+        enc[i++] = byte;
+    }
+
+    hexdump(std::span{buf});
+    int n = printf("Encoded %ld/%ld ", i, enc.size());
+    for (i = 0; i < 70 - n; ++i) { printf("="); }
+    printf("\n");
+    hexdump(std::span{enc});
+}
