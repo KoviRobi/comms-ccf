@@ -13,34 +13,61 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(comms-ccf CXX)
 
-add_executable(cobs test/cobs.cpp comms-ccf/cobs.cpp)
-target_include_directories(cobs PUBLIC comms-ccf/ test/)
-
-add_executable(circular_buffer test/circular_buffer.cpp)
-target_include_directories(circular_buffer PUBLIC comms-ccf/ test/)
-
-add_executable(cbor test/cbor.cpp comms-ccf/cbor.cpp)
-target_include_directories(cbor PUBLIC comms-ccf/ test/)
-
 enable_testing()
 
-set(components cobs fnv1a)
+set(test_build_deps "")
 
-set(test_args "")
-foreach(component IN LISTS components)
-    list(APPEND test_args "--lib${component}" $<TARGET_FILE:${component}_test>)
-endforeach()
+# Helper for building test dependencies and running the test
+function(add_build_and_test)
+    set(options)
+    set(oneValueArgs NAME)
+    set(multiValueArgs DEPENDS COMMAND)
+    cmake_parse_arguments(PARSE_ARGV 0 arg
+        "${options}" "${oneValueArgs}" "${multiValueArgs}"
+    )
 
-add_test(
-    NAME python_cosimulate_test
-    COMMAND pytest "${CMAKE_CURRENT_LIST_DIR}/test" ${test_args}
-    WORKING_DIRECTORY "$ENV{PWD}"
+    add_test(NAME "${arg_NAME}" COMMAND ${arg_COMMAND})
+    set(test_build_deps ${test_build_deps} ${arg_DEPENDS} PARENT_SCOPE)
+    set_tests_properties("${arg_NAME}" PROPERTIES FIXTURES_REQUIRED f_build)
+endfunction()
+
+# A demo for inspecting the encode and decode of COBS
+add_executable(cobs test/cobs.cpp comms-ccf/cobs.cpp)
+target_include_directories(cobs PUBLIC comms-ccf/ test/)
+add_build_and_test(NAME cobs_demo DEPENDS cobs COMMAND $<TARGET_FILE:cobs>)
+
+# A couple of tests for the circular buffer
+add_executable(circular_buffer test/circular_buffer.cpp)
+target_include_directories(circular_buffer PUBLIC comms-ccf/ test/)
+add_build_and_test(
+    NAME circular_buffer_test
+    DEPENDS circular_buffer
+    COMMAND $<TARGET_FILE:circular_buffer>
 )
 
-foreach(component IN LISTS components)
-    add_library(${component}_test SHARED test/${component}_wrapper.cpp)
-    target_include_directories(${component}_test PUBLIC comms-ccf/ test/)
-    target_compile_options(${component}_test PUBLIC
+# Tests the CBOR encoding based on the table in comms-ccf/cbor.hpp
+add_executable(cbor test/cbor.cpp comms-ccf/cbor.cpp)
+target_include_directories(cbor PUBLIC comms-ccf/ test/)
+add_build_and_test(
+    NAME cbor_test
+    DEPENDS cbor
+    COMMAND $<TARGET_FILE:cbor> "${CMAKE_CURRENT_LIST_DIR}/comms-ccf/cbor.hpp"
+)
+
+add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)
+target_include_directories(cobs_wrapper PUBLIC comms-ccf/ test/)
+add_library(fnv1a_wrapper SHARED test/fnv1a_wrapper.cpp)
+target_include_directories(fnv1a_wrapper PUBLIC comms-ccf/ test/)
+add_build_and_test(
+    NAME python_cosimulate_test
+    DEPENDS cobs_wrapper fnv1a_wrapper
+    COMMAND pytest "${CMAKE_CURRENT_LIST_DIR}/test"
+        --libcobs $<TARGET_FILE:cobs_wrapper>
+        --libfnv1a $<TARGET_FILE:fnv1a_wrapper>
+)
+
+foreach(test IN LISTS test_build_deps)
+    target_compile_options(${test} PUBLIC
         -Wall
         -Wextra
         -Wmissing-declarations
@@ -49,16 +76,11 @@ foreach(component IN LISTS components)
         $<$<COMPILE_LANGUAGE:C>:-fconcepts-diagnostics-depth=2>
     )
 
-    add_test(build_library_${component}_test
+    add_test(build_${test}
       "${CMAKE_COMMAND}"
       --build "${CMAKE_BINARY_DIR}"
       --config "$<CONFIG>"
-      --target ${component}_test
+      --target ${test}
     )
-
-    set_tests_properties(build_library_${component}_test PROPERTIES FIXTURES_SETUP f_library_build)
+    set_tests_properties(build_${test} PROPERTIES FIXTURES_SETUP f_build)
 endforeach()
-
-target_sources(cobs_test PRIVATE comms-ccf/cobs.cpp)
-
-set_tests_properties(python_cosimulate_test PROPERTIES  FIXTURES_REQUIRED f_library_build)
