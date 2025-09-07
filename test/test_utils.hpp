@@ -19,7 +19,7 @@ but enough for writing some quick tests
 #define expect(...)                                                          \
     ok = ok && assert_((__VA_ARGS__), __FILE__, __func__, __LINE__, #__VA_ARGS__)
 
-bool assert_(bool expr, const char * file, const char * function, size_t line, const char * assertion)
+static bool assert_(bool expr, const char * file, const char * function, size_t line, const char * assertion)
 {
     if (!expr)
     {

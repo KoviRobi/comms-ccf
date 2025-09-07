@@ -19,7 +19,7 @@ CircularBuffer<uint8_t, BUF_SIZE, MAX_PKT_SIZE> buf;
 std::optional<decltype(buf)::Notification> notification;
 std::back_insert_iterator ins{buf};
 
-bool test_insert_more_than_max_pkt_size()
+static bool test_insert_more_than_max_pkt_size()
 {
     notification.reset();
     buf.reset();
@@ -34,7 +34,7 @@ bool test_insert_more_than_max_pkt_size()
     return true;
 }
 
-bool test_fill_queue_max_pkt_size()
+static bool test_fill_queue_max_pkt_size()
 {
     notification.reset();
     buf.reset();
@@ -60,7 +60,7 @@ bool test_fill_queue_max_pkt_size()
     return true;
 }
 
-bool test_fill_queue_small_pkts()
+static bool test_fill_queue_small_pkts()
 {
     notification.reset();
     buf.reset();
@@ -96,7 +96,7 @@ bool test_fill_queue_small_pkts()
     return true;
 }
 
-bool test_normal_operation()
+static bool test_normal_operation()
 {
     notification.reset();
     buf.reset();

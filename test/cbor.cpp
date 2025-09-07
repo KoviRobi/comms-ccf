@@ -78,29 +78,6 @@ static bool parse_bytes(std::string s, std::vector<uint8_t> & into)
     return true;
 }
 
-/// Parse a byte string (sequence of bytes/base16)
-static bool parse(std::string s, std::vector<uint8_t> & into)
-{
-    std::regex literal{"h'((?:[0-9a-fA-F]{2})*)'"};
-    std::smatch m;
-    if (std::regex_match(s.cbegin(), s.cend(), m, literal))
-    {
-        return parse_bytes(m[1], into);
-    }
-    return false;
-}
-
-/// Parse a list of integers
-static bool parse(std::string s, std::vector<int> & into)
-{
-    std::regex literal{R"-((([0-9]+)(\s*,\s*[0-9]+)*)?)-"};
-    std::smatch m;
-    if (std::regex_match(s.cbegin(), s.cend(), m, literal))
-    {
-    }
-    return false;
-}
-
 int main(int argc, char ** argv)
 {
     const char * path = "comms-ccf/cbor.hpp";

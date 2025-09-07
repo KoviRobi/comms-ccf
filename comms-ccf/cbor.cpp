@@ -3,8 +3,11 @@
 #if defined(DEBUG_CBOR)
 #include DEBUG_CBOR
 #else
+extern int printf(const char *, ...);
 /// Need an expression that contains parameters for parameter pack
-#define debugf(...) (false ? (void)(__VA_ARGS__) : (void)0)
+/// Want to avoid linking printf at any optimisation, hence the constexpr if
+/// Want an expression not a statement, hence the lambda wrapper
+#define debugf(...) ([&]{ if constexpr (false) { printf(__VA_ARGS__); } }())
 #endif
 
 #include <stdint.h>

@@ -30,7 +30,7 @@ int main()
 
     hexdump(std::span{buf});
     int n = printf("Encoded %ld/%ld ", i, enc.size());
-    for (i = 0; i < 70 - n; ++i) { printf("="); }
+    for (n = 70 - n; n > 0; --n) { printf("="); }
     printf("\n");
     hexdump(std::span{enc});
 }
