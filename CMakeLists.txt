@@ -13,9 +13,6 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(comms-ccf CXX)
 
-string(APPEND CMAKE_CXX_FLAGS_DEBUG " -g3 -Og")
-string(APPEND CMAKE_CXX_FLAGS " -fconcepts-diagnostics-depth=2")
-
 add_executable(cobs test/cobs.cpp comms-ccf/cobs.cpp)
 target_include_directories(cobs PUBLIC comms-ccf/ test/)
 
@@ -43,9 +40,13 @@ add_test(
 foreach(component IN LISTS components)
     add_library(${component}_test SHARED test/${component}_wrapper.cpp)
     target_include_directories(${component}_test PUBLIC comms-ccf/ test/)
-    target_compile_options(${component}_test PUBLIC -Wall -Wextra
+    target_compile_options(${component}_test PUBLIC
+        -Wall
+        -Wextra
         -Wmissing-declarations
+        $<$<CONFIG:Debug>:-g3 -Og>
         $<$<COMPILE_LANGUAGE:C>:-Wmissing-prototypes>
+        $<$<COMPILE_LANGUAGE:C>:-fconcepts-diagnostics-depth=2>
     )
 
     add_test(build_library_${component}_test
