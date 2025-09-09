@@ -8,6 +8,9 @@
 
 #include <stdint.h>
 
+#include <array>
+#include <string_view>
+
 using namespace std::literals;
 
 static StackType_t commsCcfStack[1024];
@@ -21,9 +24,23 @@ static Ccf<{
 
 static TaskHandle_t rxTask;
 
+static const auto version = std::to_array<std::string_view>({
+    "main"sv,
+    "a/b/c"sv,
+    "g1234567"sv
+});
+
 /// Add RPC definitions here.
 static Rpc rpc{
     /// Note: using `+` to convert lambda to a function pointer
+    Call("version", "software version", {}, +[]() {
+        return std::tuple{
+            "main"sv,
+            "a/b/c"sv,
+            /*git hash*/0x1234567llu
+        };
+    }),
+    Call("add", "return x+y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x + y; }),
     Call("add", "return x+y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x + y; }),
     Call("sub", "return x-y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x - y; }),
     Call("hello", "greet", {}, +[]() { return "Hello world"sv; }),
