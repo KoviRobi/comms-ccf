@@ -61,9 +61,10 @@ add_build_and_test(
     NAME rpc_demo
     DEPENDS rpc
     COMMAND
-        "${CMAKE_CURRENT_LIST_DIR}/python/async_subprocess.py"
+        "${CMAKE_CURRENT_LIST_DIR}/python/wrap_subprocess.py"
+        --verbose
+        --no-repl
         $<TARGET_FILE:rpc>
-        -v
 )
 
 add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)
