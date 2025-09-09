@@ -11,6 +11,10 @@ some other libraries.  (At the same time, the code size could perhaps
 be smaller, I used C++ templates and they can expand to a fair amount
 of code.)
 
+## Demo & Resource use
+
+There is a demon in the [FreeRTOS-Demo/](/FreeRTOS-Demo/README.md) folder.
+
 ## Acknowledgements
 
 With much gratitude to Robert McGregor and Jamie Wood, who have shown
