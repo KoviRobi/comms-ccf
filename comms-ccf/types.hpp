@@ -9,7 +9,6 @@ is the smallest type required to hold it.
 #pragma once
 
 #include <bit>
-#include <cstdint>
 #include <stddef.h>
 #include <stdint.h>
 
