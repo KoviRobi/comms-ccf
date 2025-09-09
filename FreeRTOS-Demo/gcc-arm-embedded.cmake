@@ -37,7 +37,7 @@ foreach(compiler IN ITEMS CXX C ASM)
 endforeach()
 
 set(CMAKE_ASM_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -x assembler-with-cpp")
-set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-rtti -fno-exceptions")
+set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-rtti -fno-exceptions -fno-use-cxa-atexit")
 
 set(CMAKE_ASM_LINK_FLAGS "-T ${CMAKE_CURRENT_LIST_DIR}/standalone.ld -nostartfiles")
 set(CMAKE_ASM_LINK_FLAGS "${CMAKE_ASM_LINK_FLAGS} -Wl,-Map=${CMAKE_PROJECT_NAME}.map")

@@ -41,6 +41,13 @@ SECTIONS
     {
         KEEP(*(.isr_vector))
         *(.text*)
+
+        /* static initializers */
+        PROVIDE(__init_array_start = .);
+	KEEP(*(SORT(.init_array.*)))
+	KEEP(*(.init_array))
+        PROVIDE(__init_array_end = .);
+
         *(.rodata*)
         _etext = .;
     } > FLASH

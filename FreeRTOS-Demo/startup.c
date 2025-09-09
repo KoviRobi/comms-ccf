@@ -174,6 +174,13 @@ ResetISR(void)
         *pulDest++ = 0;
     }
 
+    extern void (*__init_array_start[])(void) __attribute__((weak));
+    extern void (*__init_array_end[])(void) __attribute__((weak));
+    unsigned count = __init_array_end - __init_array_start;
+    for (unsigned i = 0; i < count; i++) {
+        __init_array_start[i]();
+    }
+
     //
     // Call the application's entry point.
     //

@@ -52,8 +52,13 @@
 #include "hw_memmap.h"
 #include "hw_types.h"
 #include "hw_sysctl.h"
+#include "hw_uart.h"
+#include "hw_ints.h"
 #include "sysctl.h"
 #include "uart.h"
+#include "interrupt.h"
+
+#include "comms-ccf.hpp"
 
 /*-----------------------------------------------------------*/
 
@@ -78,6 +83,28 @@ void vApplicationIdleHook(void)
     asm volatile("wfi");
 }
 
+static void vUart0Int( void )
+{
+    const unsigned long interrupt = UARTIntStatus(UART0_BASE, pdTRUE);
+    UARTIntClear(UART0_BASE, interrupt);
+    if (interrupt & UART_INT_RX)
+    {
+        while (UARTCharsAvail(UART0_BASE))
+        {
+            const uint8_t byte = UARTCharGetNonBlocking(UART0_BASE);
+            commsCcfRx( byte );
+        }
+    }
+    if (interrupt & UART_INT_TX)
+    {
+        commsCcfTxNext();
+    }
+}
+
+void commsCcfTx( uint8_t byte )
+{
+    UARTCharPutNonBlocking( UART0_BASE, byte );
+}
 
 /*-----------------------------------------------------------*/
 
@@ -89,7 +116,6 @@ void vApplicationIdleHook(void)
 int main( void )
 {
     setvbuf(stdout, NULL, _IONBF, 0);
-    fprintf(stderr, "Hello, world!\n");
     /* Initialise the trace recorder.  Use of the trace recorder is optional.
      * See http://www.FreeRTOS.org/trace for more information and the comments at
      * the top of this file regarding enabling trace in this demo.
@@ -98,6 +124,7 @@ int main( void )
     prvSetupHardware();
 
     /* Start the standard demo tasks. */
+    commsCcfStartTasks();
 
     /* Uncomment the following line to configure the high frequency interrupt
      * used to measure the interrupt jitter time.
@@ -129,6 +156,12 @@ void prvSetupHardware( void )
     /* Initialise the UART - QEMU usage does not seem to require this
      * initialisation. */
     SysCtlPeripheralEnable( SYSCTL_PERIPH_UART0 );
+    UARTConfigSet(UART0_BASE, 115200,
+                  UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE);
+    UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX1_8);
+    UARTIntRegister( UART0_BASE, vUart0Int );
+    IntPrioritySet(INT_UART0, 0x40);
+    UARTIntEnable( UART0_BASE, UART_INT_RX | UART_INT_TX );
     UARTEnable( UART0_BASE );
 }
 /*-----------------------------------------------------------*/
