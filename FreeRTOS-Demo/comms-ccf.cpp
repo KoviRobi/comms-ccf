@@ -25,6 +25,7 @@ static TaskHandle_t rxTask;
 static Rpc rpc{
     /// Note: using `+` to convert lambda to a function pointer
     Call("add", "return x+y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x + y; }),
+    Call("sub", "return x-y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x - y; }),
     Call("hello", "greet", {}, +[]() { return "Hello world"sv; }),
 };
 
