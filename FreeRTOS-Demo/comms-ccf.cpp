@@ -49,6 +49,9 @@ static Rpc rpc{
     Call("add", "return x+y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x + y; }),
     Call("sub", "return x-y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x - y; }),
     Call("hello", "greet", {}, +[]() { return "Hello world"sv; }),
+    Call("read_mem", "read memory", {"addr", "size"}, +[](uintptr_t addr, size_t size) {
+        return std::span(reinterpret_cast<uint8_t *>(addr), size);
+    }),
 };
 
 /// Called by the UART interrupt handler when it receives a character.
