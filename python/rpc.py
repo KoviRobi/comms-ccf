@@ -70,10 +70,10 @@ class Rpc:
     def methods(self) -> dict[str, t.Callable[..., object]]:
         return self._methods
 
-    def help(self, name: t.Optional[str] = None):
+    def help(self, thing: t.Optional[object] = None):
         print("\n")
-        if name:
-            print(indent(self._doc.document(self._methods[name]), "> "))
+        if thing is not None:
+            print(indent(self._doc.document(thing), "| "))
         else:
-            for name in self._methods:
-                print(indent(self._doc.document(self._methods[name]), "| "))
+            for method in self._methods.values():
+                print(indent(self._doc.document(method), "| "))
