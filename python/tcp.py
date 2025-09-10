@@ -14,6 +14,11 @@ from rpc import Rpc
 from transport import StreamTransport
 
 
+class Stdio:
+    input = input
+    print = print
+
+
 async def amain():
     parser = ArgumentParser()
     parser.add_argument("--host", default="localhost", help="Host to connect to")
@@ -53,10 +58,16 @@ async def amain():
     except Exception as e:
         print(e)
 
-    await repl(locals, locals)
+    await repl(Stdio(), locals)
+
+
+def quit(*args, **kwargs):
+    sys.stdin.close()
+    print("Press Ctrl-D (or any other key) to exit")
+    exit()
 
 
 if __name__ == "__main__":
     # Make keyboard interrupt quit AsyncIO
-    signal.signal(signal.SIGINT, (lambda *_: exit(0)))
+    signal.signal(signal.SIGINT, quit)
     asyncio.run(amain())
