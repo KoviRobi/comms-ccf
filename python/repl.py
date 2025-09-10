@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 history_file = Path.home() / ".cache" / "comms-ccf_history"
 
 
-async def repl(globals, locals):
+async def repl(io, locals):
     if readline and rlcompleter:
         completer = rlcompleter.Completer(namespace=locals)
         readline.set_completer(completer.complete)
@@ -30,7 +30,8 @@ async def repl(globals, locals):
 
     while True:
         try:
-            line = input("in>  ").strip()
+            line = await asyncio.to_thread(lambda: io.input("in>  "))
+            line = line.strip()
             if readline:
                 readline.append_history_file(1000, str(history_file))
         except (KeyboardInterrupt, EOFError):
@@ -41,7 +42,7 @@ async def repl(globals, locals):
             # Patch line to be able to use await inside byn making it an
             # (async) generator
             line = f"((\n{line}\n) for _ in '_')"
-            print("out> ", end="")
+            await asyncio.to_thread(lambda: io.print("out> ", end=""))
             expr = eval(line, locals, locals)
             if isinstance(expr, AsyncGenerator):
                 expr = await expr.__anext__()

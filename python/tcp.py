@@ -15,6 +15,9 @@ from transport import StreamTransport
 
 background_tasks = set()
 
+class Stdio:
+    input = input
+    print = print
 
 async def amain():
     parser = ArgumentParser()
@@ -67,7 +70,7 @@ async def amain():
     except Exception as e:
         print(e)
 
-    await repl(locals, locals)
+    await repl(Stdio(), locals)
 
 
 if __name__ == "__main__":
