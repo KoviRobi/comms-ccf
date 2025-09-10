@@ -6,10 +6,49 @@ Can be used to implement other channels on top, e.g. RPC, logging,
 tracing etc.
 
 None of the ideas are new here, but it's still useful to have them
-together like this. And it's perhaps more focused on embedded than
-some other libraries.  (At the same time, the code size could perhaps
-be smaller, I used C++ templates and they can expand to a fair amount
-of code.)
+together like this. And it's more focused on embedded than some other
+libraries.  (At the same time, the code size could perhaps be smaller,
+I used C++ templates and they can expand to a fair amount of
+code. Especially when  using no optimisation [`-O0`] instead of debug
+optimisation [`-Og`].)
+
+## Status: Proof of concept
+
+Currently there is a working demo in
+[FreeRTOS-Demo/](/FreeRTOS-Demo/README.md) which should be possible to
+port to other platforms. There is some Python support in
+[python/](python/) which can connect to the demo and issue RPC commands.
+
+This is proof-of-concept because not all of the layers below are filled
+in properly:
+
+1. Python layer could use IPython for a more friendly REPL.
+2. RPC
+    1. [ ] The Python type hints only do simple types, doing nested
+    types such as tuples is not yet done.
+    2. [ ] More complicated RPC is not done (e.g. asynchronous functions,
+    functions returning data over several packets).
+    3. [ ] Storing values (e.g. objects) across function calls is not
+    done -- probably not necessary though.
+    4. [ ] Proper error values for issues with the RPC.
+3. [ ] Other protocols such as logging or streaming sensor results not
+yet demonstrated.
+4. [ ] CBOR
+   1. [ ] The API needs improving to be able to avoid doing all the
+   decoding on the stack as a return value. For example, read/write
+   memory doesn't need to materialise all of the bytes on the stack,
+   it could use an iterator for decode, and a span for encode.
+   2. [ ] Supporting structs is not currently done. The constructor
+   could probably be used as an RPC function, so constructing could be
+   done, but destructing is more tricky. One solution for POD
+   structs is to infer fields from default constructor, see
+   <https://github.com/Mizuchi/ForeachMember>. Or have a way for users
+   to define serialization of their struct.
+5. [ ] The circular buffer has a few TODOs to improve it.
+6. [ ] The COBS layer could have input & output iterators, which could
+then be used to have views-like interfaces and make defining the CCF
+layer neater.
+
 
 ## Demo & Resource use
 
@@ -74,8 +113,8 @@ This impacts design in a couple of ways:
 
 ## Transport wire format
 
-The format on the wire is the following, big endian network byte order for the
-checksum because the CBOR is also big endian.
+The format on the wire is the following, little endian network byte
+order for the checksum because that is what I'm used to writing.
 
 | `ID: u8` | `data: u8[]/CBOR` | `checksum: u32` |
 |----------|-------------------|-----------------|
