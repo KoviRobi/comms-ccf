@@ -27,6 +27,9 @@ target_include_directories(FreeRTOS-Demo PUBLIC
     LocalDemoFiles
     LuminaryMicro
 )
+target_compile_options(FreeRTOS-Demo PUBLIC
+    $<$<COMPILE_LANGUAGE:CXX>:-fdiagnostics-all-candidates>
+)
 target_link_libraries(FreeRTOS-Demo PUBLIC
     freertos_kernel
     "${CMAKE_CURRENT_LIST_DIR}/LuminaryMicro/arm-none-eabi-gcc/libdriver.a"
