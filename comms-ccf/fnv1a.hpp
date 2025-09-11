@@ -36,6 +36,7 @@ https://softwareengineering.stackexchange.com/a/145633
 namespace Fnv1a
 {
     constexpr uint32_t initialHash = 0x811c9dc5;
+    constexpr size_t size = sizeof(initialHash);
 
     constexpr uint32_t feed(uint32_t hash, uint8_t byte)
     {

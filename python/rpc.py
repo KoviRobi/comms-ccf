@@ -5,15 +5,12 @@ from inspect import Parameter, signature
 from textwrap import indent
 
 from cbor import dumps, loads
+from channel import Channel, Channels
 from transport import DEFAULT_TIMEOUT, Transport
 
 
-class Chan:
-    RPC = 0
-
-
 class Rpc:
-    def __init__(self, transport: Transport):
+    def __init__(self, transport: Channels):
         self._transport = transport
         self._methods: dict[str, t.Callable[..., t.Any]] = {"schema": self.schema}
         self._doc = pydoc.TextDoc()
@@ -21,11 +18,10 @@ class Rpc:
     async def __call__(self, n, args: t.Any, timeout=DEFAULT_TIMEOUT) -> t.Any:
         deadline = time.time() + timeout
         data = int.to_bytes(n) + dumps(args)
-        await self._transport.send(Chan.RPC, data, timeout=timeout)
+        await self._transport.send(Channel.RPC, data, timeout=timeout)
         timeout = deadline - time.time()
         if timeout > 0:
-            chan, data = await self._transport.recv(timeout=timeout)
-            assert chan == Chan.RPC
+            data = await self._transport.recv(Channel.RPC, timeout=timeout)
             function = data[0]
             data = data[1:]
             assert function == n, "Received response to a different function"
@@ -34,8 +30,9 @@ class Rpc:
             raise TimeoutError("No data received over RPC in the given time")
 
     async def discover(self, timeout=DEFAULT_TIMEOUT):
-        self._schema = await self(0, [], timeout=DEFAULT_TIMEOUT)
-        assert isinstance(self._schema, list)
+        self._schema = await self(0, [], timeout=timeout)
+        print("Schema", self._schema)
+        assert isinstance(self._schema, list), "Bad schema"
         for index, fun in enumerate(self._schema, start=1):
             self.add_function(index, *fun)
 

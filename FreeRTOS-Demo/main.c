@@ -126,6 +126,8 @@ int main( void )
 
     /* Start the standard demo tasks. */
     commsCcfStartTasks();
+    void createLogTask();
+    createLogTask();
 
     /* Uncomment the following line to configure the high frequency interrupt
      * used to measure the interrupt jitter time.

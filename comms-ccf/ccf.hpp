@@ -19,18 +19,39 @@ buffer) together to be able to do RPC calls.
 #include "ndebug.hpp"
 #endif
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <algorithm>
 #include <iterator>
 #include <optional>
+#include <span>
 
 struct CcfConfig
 {
     size_t rxBufSize;
     size_t txBufSize;
     size_t maxPktSize;
+};
+
+enum class Channels : uint8_t
+{
+    Rpc = 0,
+    Log = 1,
+    // TODO: In-place trace tag to save bytes on trace data?
+    Trace = 2,
+};
+
+enum class LogLevel : uint8_t
+{
+    Debug,
+    Info,
+    Warn,
+    Error,
+
 };
 
 template<CcfConfig Config>
@@ -158,20 +179,95 @@ public:
                 output = true;
                 continue;
             }
-
-            // +4 for the checksum, the start bytes are accounted for
-            auto respLen = static_cast<size_t>(ret.data() - pktBuf) + 4;
-            std::span resp{pktBuf, respLen};
-            Fnv1a::putAtEnd(resp);
-            for (auto c : Cobs::Encoder(resp))
-            {
-                txBuf.push_back(c);
-            }
-            txBuf.push_back(static_cast<uint8_t>(0));
-            txBuf.notify();
-            output = true;
+            auto respLen = static_cast<size_t>(ret.data() - pktBuf);
+            std::span resp{pktBuf + sizeof(channel), respLen - sizeof(channel)};
+            output = output || send(Channels::Rpc, resp);
         }
         return output;
+    }
+
+    /// **Not threadsafe** use a mutex
+    ///
+    /// Put some messaget to be sent, returns true if it has succeeded
+    /// (and therefore you should call the function to send messages
+    /// from the queue).
+    ///
+    /// TODO: Maybe could be re-entrant/support adding from ISR without
+    /// locking by exchanging the ISR data buffer with the data not yet
+    /// notified, then putting the data not yet notified back after. This
+    /// would make it only not threadsafe for normal tasks which might
+    /// get switched out between each-other
+    bool send(Channels channel, std::span<uint8_t> & data)
+    {
+        const size_t toSend = data.size() + sizeof(channel) + Fnv1a::size;
+        if (toSend > sizeof(pktBuf))
+        {
+            debugf("Data for send too large\n");
+            return false;
+        }
+        std::span resp{pktBuf, toSend};
+        uint8_t chan = static_cast<uint8_t>(channel);
+        resp[0] = chan;
+        // Note: memmove caters for overlapping pktBuf/data
+        if (&data[0] != &resp[1])
+        {
+            memmove(&resp[1], data.data(), data.size_bytes());
+        }
+        Fnv1a::putAtEnd(resp);
+        for (auto c : Cobs::Encoder(resp))
+        {
+            txBuf.push_back(c);
+        }
+        txBuf.push_back(static_cast<uint8_t>(0));
+        if (txBuf.dropping())
+        {
+            txBuf.reset_dropped();
+            return false;
+        }
+        else
+        {
+            txBuf.notify();
+            return true;
+        }
+    }
+
+    /// **Not threadsafe** use a mutex
+    ///
+    /// Log some data. Returns the number of bytes logged, or nullopt
+    /// if it failed to log.
+    ///
+    /// TODO: Deferred formatting
+    /// TODO: Optionally just send the format string pointer (if it is
+    /// in .rodata) and the client can read it from the ELF file (or
+    /// download it separately)
+    std::optional<uint32_t> log(LogLevel level, uint8_t module, const char * fmt, ...)
+    {
+        if (module > (1 << 5) - 1)
+        {
+            return {};
+        }
+        uint8_t initialByte = (static_cast<uint8_t>(level) << 5) | module;
+        std::span<uint8_t> span{pktBuf};
+        span[0] = initialByte;
+        va_list args;
+        va_start(args, fmt);
+        int written = vsnprintf(
+            reinterpret_cast<char *>(span.data()) + 1,
+            span.size() - 1,
+            fmt,
+            args
+        );
+        va_end(args);
+        if (written < 0)
+        {
+            return {};
+        }
+        span = span.first(sizeof(initialByte) + written);
+        if (send(Channels::Log, span))
+        {
+            return {written};
+        }
+        return {};
     }
 
 private:

@@ -6,9 +6,14 @@ import sys
 import time
 from argparse import ArgumentParser
 
+from cobs.cobs import DecodeError
+
+from channel import Channels
 from repl import repl
 from rpc import Rpc
 from transport import StreamTransport
+
+background_tasks = set()
 
 
 async def amain():
@@ -22,7 +27,26 @@ async def amain():
     global rx, tx, transport, rpc
     rx, tx = await asyncio.open_connection(args.host, args.port)
     transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
-    rpc = Rpc(transport)
+    loop = asyncio.get_event_loop()
+    channels = Channels(transport, loop)
+    channels.open_channel(0)
+    channel_task = loop.create_task(channels.loop())
+    background_tasks.add(channel_task)
+    channel_task.add_done_callback(background_tasks.discard)
+    rpc = Rpc(channels)
+
+    async def log():
+        channels.open_channel(1)
+        while True:
+            try:
+                msg = await channels.recv(1)
+                print("Log: ", msg.decode("ascii", "ignore"))
+            except (TimeoutError, DecodeError):
+                pass
+
+    log_task = loop.create_task(log())
+    background_tasks.add(log_task)
+    log_task.add_done_callback(background_tasks.remove)
 
     while True:
         try:
