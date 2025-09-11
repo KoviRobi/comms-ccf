@@ -26,7 +26,8 @@ python ../python/tcp.py
 
 | commit                                                           | SRAM    | %age   | FLASH   | %age  |
 |------------------------------------------------------------------|---------|--------|---------|-------|
-| `@^{/FreeRTOS-Demo: Use stdio.h}`                                | 53872 B | 82.20% |20940 B  | 7.99% |
-| `@^{/FreeRTOS-Demo: Add RPC example}`                            | 59348 B | 90.56% |25028 B  | 9.55% |
+| `@^{/FreeRTOS-Demo: Use stdio.h}`                                | 53872 B | 82.20% | 20940 B | 7.99% |
+| `@^{/FreeRTOS-Demo: Add RPC example}`                            | 59348 B | 90.56% | 25028 B | 9.55% |
 | `@^{/FreeRTOS-Demo: Add trivial second function}`                | 59376 B | 90.60% | 25092 B | 9.57% |
+| `@^{/Remove duplicated add command}`                             | 59400 B | 90.64% | 25536 B | 9.74% |
 | `@^{/FreeRTOS-Demo: Add a version command to diff resource use}` | 59428 B | 90.68% | 25568 B | 9.75% |
