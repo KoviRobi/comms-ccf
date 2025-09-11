@@ -22,8 +22,8 @@ port to other platforms. There is some Python support in
 This is proof-of-concept because not all of the layers below are filled
 in properly:
 
-1. Python layer could use IPython for a more friendly REPL.
-2. RPC
+1. [ ] Python layer could use IPython for a more friendly REPL.
+2. [ ] RPC
     1. [ ] The Python type hints only do simple types, doing nested
     types such as tuples is not yet done.
     2. [ ] More complicated RPC is not done (e.g. asynchronous functions,
