@@ -24,6 +24,11 @@
             pkgs.python3.pkgs.cobs
             pkgs.python3.pkgs.cbor
             pkgs.python3.pkgs.fnv-hash-fast
+            pkgs.python3.pkgs.ipython
+            pkgs.python3.pkgs.pyside6
+            pkgs.python3.pkgs.qtconsole
+            pkgs.python3.pkgs.pyqtgraph
+            pkgs.python3.pkgs.pglive
           ]
           ++ pkgs.lib.optionals demo [
             # FreeRTOSDemo
