@@ -2,11 +2,11 @@
 Keep track of background tasks so their exceptions can be read.
 """
 
-from asyncio import EventLoop, Task
+from asyncio import AbstractEventLoop, Task
 
 
 class BackgroundTasks:
-    def __init__(self, loop: EventLoop) -> None:
+    def __init__(self, loop: AbstractEventLoop) -> None:
         self._tasks: set[Task] = set()
         self._loop = loop
 
