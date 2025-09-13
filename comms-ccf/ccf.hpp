@@ -82,14 +82,19 @@ public:
         return txBuf.get_notification(notification);
     }
 
-    /// **Not safe** to call from an interrupt context
+    /// **Not multithreaded**
+    /// **Not safe to call from an interrupt context**
+    ///
+    /// Process any incoming packets. Returns true if there is an output
+    /// in response.
     ///
     /// Use an external synchronisation mechanism to call this after a
     /// null byte has been received. (It just won't have anything to do
     /// until then.)
     template<typename Rpc>
-    void poll(const Rpc & rpc)
+    bool poll(const Rpc & rpc)
     {
+        bool output = false;
         std::optional<RxNotification> notification;
         while (rxBuf.get_notification(notification))
         {
@@ -109,6 +114,7 @@ public:
                 std::ranges::copy("Bad RPC!\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
+                output = true;
                 continue;
             }
 
@@ -124,6 +130,7 @@ public:
                 std::ranges::copy("Corrupted request\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
+                output = true;
                 continue;
             }
             // Remove channel + checksum
@@ -144,6 +151,7 @@ public:
                 std::ranges::copy("RPC failed\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
+                output = true;
                 continue;
             }
 
@@ -157,7 +165,9 @@ public:
             }
             txBuf.push_back(static_cast<uint8_t>(0));
             txBuf.notify();
+            output = true;
         }
+        return output;
     }
 
 private:

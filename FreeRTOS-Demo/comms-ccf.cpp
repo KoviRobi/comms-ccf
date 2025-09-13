@@ -111,9 +111,12 @@ void commsCcfProcessTask(void *)
             // Maybe do some action e.g. ticke watchdog
             continue;
         }
-        ccf.poll(rpc);
-        // Kick TX
-        commsCcfTxNextFromApplication();
+        if (ccf.poll(rpc))
+        {
+            printf("Sending response\n");
+            // Kick TX
+            commsCcfTxNextFromApplication();
+        }
     }
 }
 
