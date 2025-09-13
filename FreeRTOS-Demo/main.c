@@ -116,6 +116,7 @@ void commsCcfTx( uint8_t byte )
 int main( void )
 {
     setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
     /* Initialise the trace recorder.  Use of the trace recorder is optional.
      * See http://www.FreeRTOS.org/trace for more information and the comments at
      * the top of this file regarding enabling trace in this demo.
@@ -156,23 +157,19 @@ void prvSetupHardware( void )
     /* Initialise the UART - QEMU usage does not seem to require this
      * initialisation. */
     SysCtlPeripheralEnable( SYSCTL_PERIPH_UART0 );
+    SysCtlPeripheralEnable( SYSCTL_PERIPH_UART1 );
+    SysCtlPeripheralEnable( SYSCTL_PERIPH_UART2 );
+
     UARTConfigSet(UART0_BASE, 115200,
                   UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE);
     UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX1_8);
     UARTIntRegister( UART0_BASE, vUart0Int );
     IntPrioritySet(INT_UART0, 0x40);
     UARTIntEnable( UART0_BASE, UART_INT_RX | UART_INT_TX );
-    UARTEnable( UART0_BASE );
-}
-/*-----------------------------------------------------------*/
 
-static void prvPrintString( const char * pcString )
-{
-    while( *pcString != 0x00 )
-    {
-        UARTCharPut( UART0_BASE, *pcString );
-        pcString++;
-    }
+    UARTEnable( UART0_BASE );
+    UARTEnable( UART1_BASE );
+    UARTEnable( UART2_BASE );
 }
 /*-----------------------------------------------------------*/
 
@@ -265,12 +262,12 @@ void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
 
 #include <sys/unistd.h>
 
-_ssize_t _write (int, const void * p, size_t len)
+_ssize_t _write (int fd, const void * p, size_t len)
 {
     const char * s = p;
     for (int i = 0; i < len; ++i)
     {
-        UARTCharPut(UART0_BASE, s[i]);
+        UARTCharPut(UART1_BASE, s[i]);
     }
     return len;
 }
