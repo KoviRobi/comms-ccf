@@ -19,6 +19,8 @@ Currently there is a working demo in
 port to other platforms. There is some Python support in
 [python/](python/) which can connect to the demo and issue RPC commands.
 
+[![asciicast](https://asciinema.org/a/740327.svg)](https://asciinema.org/a/740327)
+
 This is proof-of-concept because not all of the layers below are filled
 in properly:
 
