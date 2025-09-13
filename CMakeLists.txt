@@ -106,14 +106,15 @@ foreach(test IN LISTS test_build_deps)
         -Wmissing-declarations
         $<$<CONFIG:Debug>:-g3 -Og>
         $<$<COMPILE_LANGUAGE:C>:-Wmissing-prototypes>
-        $<$<COMPILE_LANGUAGE:C>:-fconcepts-diagnostics-depth=2>
+        $<$<COMPILE_LANGUAGE:CXX>:-fconcepts-diagnostics-depth=2>
     )
-
-    add_test(build_${test}
-      "${CMAKE_COMMAND}"
-      --build "${CMAKE_BINARY_DIR}"
-      --config "$<CONFIG>"
-      --target ${test}
-    )
-    set_tests_properties(build_${test} PROPERTIES FIXTURES_SETUP f_build)
 endforeach()
+
+add_custom_target(build_test_deps DEPENDS ${test_build_deps})
+add_test(build_test_deps
+  "${CMAKE_COMMAND}"
+  --build "${CMAKE_BINARY_DIR}"
+  --config "$<CONFIG>"
+  --target build_test_deps
+)
+set_tests_properties(build_test_deps PROPERTIES FIXTURES_SETUP f_build)
