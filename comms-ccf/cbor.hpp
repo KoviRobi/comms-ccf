@@ -302,17 +302,19 @@ typedef _Float16 half;
     bool packEmbedded(Major major, uint8_t value, std::span<uint8_t> & buf);
     /// Pack an N bit value (usually if the value is [0, 23] you
     /// want packEmbedded).  Ends up as an initial header byte and
-    /// ceil(N/8) value bytes(
-    template<std::integral Int, size_t N>
+    /// ceil(N/8) value bytes
+    template<std::unsigned_integral Int>
     bool pack(Major major, Int value, std::span<uint8_t> & buf);
     template<>
-    bool pack<uint64_t, 8>(Major major, uint64_t value, std::span<uint8_t> & buf);
+    bool pack<unsigned char>(Major major, unsigned char value, std::span<uint8_t> & buf);
     template<>
-    bool pack<uint32_t, 4>(Major major, uint32_t value, std::span<uint8_t> & buf);
+    bool pack<unsigned short>(Major major, unsigned short value, std::span<uint8_t> & buf);
     template<>
-    bool pack<uint16_t, 2>(Major major, uint16_t value, std::span<uint8_t> & buf);
+    bool pack<unsigned int>(Major major, unsigned int value, std::span<uint8_t> & buf);
     template<>
-    bool pack<uint8_t, 1>(Major major, uint8_t value, std::span<uint8_t> & buf);
+    bool pack<unsigned long>(Major major, unsigned long value, std::span<uint8_t> & buf);
+    template<>
+    bool pack<unsigned long long>(Major major, unsigned long long value, std::span<uint8_t> & buf);
 
     /// A decoded CBOR item (though some values e.g. bytes/strings just need to be
     /// copied out)
@@ -326,18 +328,20 @@ typedef _Float16 half;
     /// Unpack one item
     std::optional<Item> unpack(std::span<uint8_t> & buf);
 
-    /// Encodes a value that can be up to N bits. Unlike \see pack<T, N>,
+    /// Encodes a value that can be up to N bits. Unlike \see pack<T>,
     /// it uses the smallest encoding.
-    template<std::integral Int, size_t N>
+    template<std::unsigned_integral Int>
     bool encode(Major major, Int value, std::span<uint8_t> & buf);
     template<>
-    bool encode<uint64_t, 8>(Major major, uint64_t value, std::span<uint8_t> & buf);
+    bool encode<unsigned char>(Major major, unsigned char value, std::span<uint8_t> & buf);
     template<>
-    bool encode<uint32_t, 4>(Major major, uint32_t value, std::span<uint8_t> & buf);
+    bool encode<unsigned short>(Major major, unsigned short value, std::span<uint8_t> & buf);
     template<>
-    bool encode<uint16_t, 2>(Major major, uint16_t value, std::span<uint8_t> & buf);
+    bool encode<unsigned int>(Major major, unsigned int value, std::span<uint8_t> & buf);
     template<>
-    bool encode<uint8_t, 1>(Major major, uint8_t value, std::span<uint8_t> & buf);
+    bool encode<unsigned long>(Major major, unsigned long value, std::span<uint8_t> & buf);
+    template<>
+    bool encode<unsigned long long>(Major major, unsigned long long value, std::span<uint8_t> & buf);
 
     /// Template functionality
 
@@ -367,7 +371,7 @@ typedef _Float16 half;
             /// Note, in 2s complement -n-1 is bitwise negated n (~n)
             value = value >= 0 ? value : ~value;
             using UI = std::make_unsigned_t<I>;
-            return ::Cbor::encode<UI, bytes>(major, std::bit_cast<UI>(value), buf);
+            return ::Cbor::encode<UI>(major, std::bit_cast<UI>(value), buf);
         }
         static std::optional<I> decode(std::span<uint8_t> & buf)
         {
@@ -410,7 +414,7 @@ typedef _Float16 half;
             // TODO: For deterministically encoded CBOR we would need
             // to select the smallest float encoding
             BitT bits = std::bit_cast<BitT>(value);
-            return ::Cbor::pack<BitT, bytes>(Major::Float, bits, buf);
+            return ::Cbor::pack<BitT>(Major::Float, bits, buf);
         }
         static std::optional<F> decode(std::span<uint8_t> & buf)
         {
@@ -486,8 +490,8 @@ typedef _Float16 half;
     {
         static bool encode(std::string_view str, std::span<uint8_t> & buf)
         {
-            if (!::Cbor::encode<uint64_t, 8>(
-                Major::Utf8, static_cast<uint64_t>(str.size()), buf))
+            if (!::Cbor::encode<size_t>(
+                Major::Utf8, str.size(), buf))
             {
                 return false;
             }
@@ -515,9 +519,9 @@ typedef _Float16 half;
                 return false;
             }
             return
-                ::Cbor::encode<uint64_t, 8>(
+                ::Cbor::encode<size_t>(
                     Major::Array,
-                    static_cast<uint64_t>(std::tuple_size_v<Tuple>),
+                    std::tuple_size_v<Tuple>,
                     buf) &&
                 [&]<size_t... Index>(std::index_sequence<Index...>)
                 {
@@ -573,7 +577,7 @@ typedef _Float16 half;
             {
                 return false;
             }
-            if (!encode<size_t, sizeof(size_t)>(Major::Array, array.size(), buf))
+            if (!encode<size_t>(Major::Array, array.size(), buf))
             {
                 return false;
             }
@@ -630,7 +634,7 @@ typedef _Float16 half;
             }
             else
             {
-                ::Cbor::encode<uint64_t, 8>(major, extent, buf);
+                ::Cbor::encode<size_t>(major, extent, buf);
             }
         }
         template<Major parentMajor>
@@ -644,7 +648,7 @@ typedef _Float16 half;
             }
             else
             {
-                ::Cbor::encode<uint64_t, 8>(major, static_cast<uint64_t>(extent), buf);
+                ::Cbor::encode<size_t>(major, extent, buf);
             }
         }
         bool as_expected()

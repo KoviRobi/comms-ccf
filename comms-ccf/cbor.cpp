@@ -6,10 +6,12 @@
 #include "ndebug.hpp"
 #endif
 
+#include <limits.h>
 #include <stdint.h>
 
-#include <span>
+#include <concepts>
 #include <optional>
+#include <span>
 
 bool Cbor::packEmbedded(Major major, uint8_t value, std::span<uint8_t> & buf)
 {
@@ -23,72 +25,94 @@ bool Cbor::packEmbedded(Major major, uint8_t value, std::span<uint8_t> & buf)
     return false;
 }
 
-template<>
-bool Cbor::pack<uint8_t, 1>(Major major, uint8_t value, std::span<uint8_t> & buf)
+namespace
 {
-    if (buf.size() >= 2)
+    template<std::unsigned_integral Int>
+    bool pack(Cbor::Major major, Int value, std::span<uint8_t> & buf)
     {
-        buf[0] = initialByte(major, Minor::OneByteFollows);
-        buf[1] = static_cast<uint8_t>(value);
-        debugf(DEBUG "pack 8b %02X:%02X" END, START, buf[0], buf[1]);
-        buf = buf.subspan(2);
-        return true;
-    }
-    return false;
-}
+        if (buf.size() < 1 + sizeof(Int))
+        {
+            return false;
+        }
+        switch (sizeof(Int))
+        {
+            case 1:
+            {
+                buf[0] = initialByte(major, Cbor::Minor::OneByteFollows);
+                buf[1] = static_cast<uint8_t>(value);
+                debugf(DEBUG "pack 8b %02X:%02X" END, START, buf[0], buf[1]);
+                buf = buf.subspan(2);
+                return true;
+            }
 
-template<>
-bool Cbor::pack<uint16_t, 2>(Major major, uint16_t value, std::span<uint8_t> & buf)
-{
-    if (buf.size() >= 3)
-    {
-        buf[0] = initialByte(major, Minor::TwoByteFollows);
-        buf[1] = static_cast<uint8_t>(value >> 8);
-        buf[2] = static_cast<uint8_t>(value);
-        debugf(DEBUG "pack 16b %02X:%02X%02X" END, START, buf[0], buf[1], buf[2]);
-        buf = buf.subspan(3);
-        return true;
-    }
-    return false;
-}
+            case 2:
+            {
+                buf[0] = initialByte(major, Cbor::Minor::TwoByteFollows);
+                buf[1] = static_cast<uint8_t>(value >> 8);
+                buf[2] = static_cast<uint8_t>(value);
+                debugf(DEBUG "pack 16b %02X:%02X%02X" END, START, buf[0], buf[1], buf[2]);
+                buf = buf.subspan(3);
+                return true;
+            }
 
-template<>
-bool Cbor::pack<uint32_t, 4>(Major major, uint32_t value, std::span<uint8_t> & buf)
-{
-    if (buf.size() >= 5)
-    {
-        buf[0] = initialByte(major, Minor::FourByteFollows);
-        buf[1] = static_cast<uint8_t>(value >> 24);
-        buf[2] = static_cast<uint8_t>(value >> 16);
-        buf[3] = static_cast<uint8_t>(value >> 8);
-        buf[4] = static_cast<uint8_t>(value);
-        debugf(DEBUG "pack 32b %02X:%02X%02X %02X%02X" END, START, buf[0], buf[1], buf[2], buf[3], buf[4]);
-        buf = buf.subspan(5);
-        return true;
-    }
-    return false;
-}
+            case 4:
+            {
+                buf[0] = initialByte(major, Cbor::Minor::FourByteFollows);
+                buf[1] = static_cast<uint8_t>(value >> 24);
+                buf[2] = static_cast<uint8_t>(value >> 16);
+                buf[3] = static_cast<uint8_t>(value >> 8);
+                buf[4] = static_cast<uint8_t>(value);
+                debugf(DEBUG "pack 32b %02X:%02X%02X %02X%02X" END, START, buf[0], buf[1], buf[2], buf[3], buf[4]);
+                buf = buf.subspan(5);
+                return true;
+            }
 
-template<>
-bool Cbor::pack<uint64_t, 8>(Major major, uint64_t value, std::span<uint8_t> & buf)
-{
-    if (buf.size() >= 9)
-    {
-        buf[0] = initialByte(major, Minor::EightByteFollows);
-        buf[1] = static_cast<uint8_t>(value >> 56);
-        buf[2] = static_cast<uint8_t>(value >> 48);
-        buf[3] = static_cast<uint8_t>(value >> 40);
-        buf[4] = static_cast<uint8_t>(value >> 32);
-        buf[5] = static_cast<uint8_t>(value >> 24);
-        buf[6] = static_cast<uint8_t>(value >> 16);
-        buf[7] = static_cast<uint8_t>(value >> 8);
-        buf[8] = static_cast<uint8_t>(value);
-        debugf(DEBUG "pack 32b %02X:%02X%02X %02X%02X %02X%02X %02X%02X" END, START,
-            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8]);
-        buf = buf.subspan(9);
-        return true;
+            case 8:
+            {
+                buf[0] = initialByte(major, Cbor::Minor::EightByteFollows);
+                buf[1] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 56);
+                buf[2] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 48);
+                buf[3] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 40);
+                buf[4] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 32);
+                buf[5] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 24);
+                buf[6] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 16);
+                buf[7] = static_cast<uint8_t>(static_cast<uint64_t>(value) >> 8);
+                buf[8] = static_cast<uint8_t>(static_cast<uint64_t>(value));
+                debugf(DEBUG "pack 64b %02X:%02X%02X %02X%02X %02X%02X %02X%02X" END, START,
+                    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8]);
+                buf = buf.subspan(9);
+                return true;
+            }
+
+            default: break;
+        }
+        return false;
     }
-    return false;
+}
+template<>
+bool Cbor::pack<unsigned char>(Major major, unsigned char value, std::span<uint8_t> & buf)
+{
+    return ::pack(major, value, buf);
+}
+template<>
+bool Cbor::pack<unsigned short>(Major major, unsigned short value, std::span<uint8_t> & buf)
+{
+    return ::pack(major, value, buf);
+}
+template<>
+bool Cbor::pack<unsigned int>(Major major, unsigned int value, std::span<uint8_t> & buf)
+{
+    return ::pack(major, value, buf);
+}
+template<>
+bool Cbor::pack<unsigned long>(Major major, unsigned long value, std::span<uint8_t> & buf)
+{
+    return ::pack(major, value, buf);
+}
+template<>
+bool Cbor::pack<unsigned long long>(Major major, unsigned long long value, std::span<uint8_t> & buf)
+{
+    return ::pack(major, value, buf);
 }
 
 std::optional<Cbor::Item> Cbor::unpack(std::span<uint8_t> & buf)
@@ -130,13 +154,12 @@ std::optional<Cbor::Item> Cbor::unpack(std::span<uint8_t> & buf)
         }
         else if (minor == Minor::EightByteFollows && buf.size() >= 9)
         {
-            debugf(DEBUG "unpack 64b" END, START);
             uint64_t value =
                 (static_cast<uint64_t>(buf[1]) << 56) | (static_cast<uint64_t>(buf[2]) << 48) |
                 (static_cast<uint64_t>(buf[3]) << 40) | (static_cast<uint64_t>(buf[4]) << 32) |
                 (static_cast<uint64_t>(buf[5]) << 24) | (static_cast<uint64_t>(buf[6]) << 16) |
                 (static_cast<uint64_t>(buf[7]) <<  8) | (static_cast<uint64_t>(buf[8]));
-            debugf(DEBUG "unpack 32b %08X%08X" END, START, (int)(value>>32), (int)(value));
+            debugf(DEBUG "unpack 64b %08X%08X" END, START, (int)(value>>32), (int)(value));
             buf = buf.subspan(9);
             return {{major, minor, value}};
         }
@@ -145,33 +168,41 @@ std::optional<Cbor::Item> Cbor::unpack(std::span<uint8_t> & buf)
 }
 
 template<>
-bool Cbor::encode<uint8_t, 1>(Major major, uint8_t value, std::span<uint8_t> & buf)
+bool Cbor::encode<unsigned char>(Major major, unsigned char value, std::span<uint8_t> & buf)
 {
     return value > EMBEDDED_MAX
-        ? pack<uint8_t, 1>(major, static_cast<uint8_t>(value), buf)
+        ? pack<unsigned char>(major, value, buf)
         : packEmbedded(major, static_cast<uint8_t>(value), buf);
 }
 
 template<>
-bool Cbor::encode<uint16_t, 2>(Major major, uint16_t value, std::span<uint8_t> & buf)
+bool Cbor::encode<unsigned short>(Major major, unsigned short value, std::span<uint8_t> & buf)
 {
-    return value > UINT8_MAX
-        ? pack<uint16_t, 2>(major, static_cast<uint16_t>(value), buf)
-        : encode<uint8_t, 1>(major, static_cast<uint8_t>(value), buf);
+    return value > USHRT_MAX
+        ? pack<unsigned short>(major, value, buf)
+        : encode<unsigned char>(major, static_cast<unsigned char>(value), buf);
 }
 
 template<>
-bool Cbor::encode<uint32_t, 4>(Major major, uint32_t value, std::span<uint8_t> & buf)
+bool Cbor::encode<unsigned int>(Major major, unsigned int value, std::span<uint8_t> & buf)
 {
     return value > UINT16_MAX
-        ? pack<uint32_t, 4>(major, static_cast<uint32_t>(value), buf)
-        : encode<uint16_t, 2>(major, static_cast<uint16_t>(value), buf);
+        ? pack<unsigned int>(major, value, buf)
+        : encode<uint16_t>(major, static_cast<uint16_t>(value), buf);
 }
 
 template<>
-bool Cbor::encode<uint64_t, 8>(Major major, uint64_t value, std::span<uint8_t> & buf)
+bool Cbor::encode<unsigned long>(Major major, unsigned long value, std::span<uint8_t> & buf)
 {
-    return value > UINT32_MAX
-        ? pack<uint64_t, 8>(major, value, buf)
-        : encode<uint32_t, 4>(major, static_cast<uint32_t>(value), buf);
+    return value > UINT_MAX
+        ? pack<unsigned long>(major, value, buf)
+        : encode<unsigned>(major, static_cast<unsigned>(value), buf);
+}
+
+template<>
+bool Cbor::encode<unsigned long long>(Major major, unsigned long long value, std::span<uint8_t> & buf)
+{
+    return value > ULONG_MAX
+        ? pack<unsigned long long>(major, value, buf)
+        : encode<unsigned long>(major, static_cast<unsigned long>(value), buf);
 }
