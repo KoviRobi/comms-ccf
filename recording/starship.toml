@@ -1,0 +1,45 @@
+add_newline = false
+format = "$all$line_break$character"
+
+[directory]
+truncation_symbol = "…/"
+
+[nix_shell]
+disabled = true
+
+[git_status]
+disabled = true
+
+[git_branch]
+disabled = true
+
+[git_commit]
+only_detached = false
+tag_disabled = false
+
+[git_state]
+disabled = true
+
+[hostname]
+disabled = true
+
+[shell]
+disabled = true
+
+[shlvl]
+disabled = true
+
+[status]
+disabled = true
+
+[time]
+disabled = true
+
+[username]
+disabled = true
+
+[c]
+disabled = false
+
+[cpp]
+disabled = false

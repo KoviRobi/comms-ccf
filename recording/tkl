@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+
+# A key-logger that works with TMUX without SUDO
+#
+# Inspired by https://xoc3.io/blog/2021-11-22 github
+# https://github.com/alanxoc3/dotfiles/blob/main/bin/tkl
+# But this doesn't require root, and uses a style I prefer
+
+from subprocess import run
+
+from pynput import keyboard
+
+Key = keyboard.Key
+
+MAX_OUTPUT_LEN = 40
+
+output_str = " " * MAX_OUTPUT_LEN
+held = set()
+
+# don't show shift modifier if the key matches any of these:
+shift_exceptions = (
+    "~",
+    "!",
+    "@",
+    "#",
+    "$",
+    "%",
+    "^",
+    "&",
+    "*",
+    "(",
+    ")",
+    "{",
+    "}",
+    '"',
+    "<",
+    ">",
+    "?",
+    "?",
+    "+",
+    "|",
+    "_",
+    ":",
+)
+should_wrap_in_angles = [f"f{n}" for n in range(1, 13)]
+
+mappings = {
+    "f1": "F1",
+    "f2": "F2",
+    "f3": "F3",
+    "f4": "F4",
+    "f5": "F5",
+    "f6": "F6",
+    "f7": "F7",
+    "f8": "F8",
+    "f9": "F9",
+    "f10": "F10",
+    "f11": "F11",
+    "f12": "F12",
+    "backspace": "⌫",
+    "delete": "⌦",
+    "tab": "⇥",
+    "space": "␣",
+    "enter": "⏎",
+    "esc": "⎋",
+    "left": "←",
+    "right": "→",
+    "up": "↑",
+    "down": "↓",
+    "home": "⇱",
+    "end": "⇲",
+    "page_down": "⎗",
+    "page_up": "⎘",
+}
+
+
+to_shift = {
+    "1": "!",
+    "2": "@",
+    "3": "#",
+    "4": "$",
+    "5": "%",
+    "6": "^",
+    "7": "&",
+    "8": "*",
+    "9": "(",
+    "0": ")",
+    "`": "~",
+    "[": "{",
+    "]": "}",
+    ",": "<",
+    ".": ">",
+    "/": "?",
+    "=": "+",
+    "-": "_",
+    ";": ":",
+    "'": '"',
+    "\\": "|",
+    **{chr(n): chr(ord("A") - ord("a") + n) for n in range(ord("a"), ord("z") + 1)},
+}
+
+
+def normalise_mods(
+    key: keyboard.Key | keyboard.KeyCode | None,
+) -> keyboard.Key | keyboard.KeyCode | None:
+    if key in [Key.ctrl_l, Key.ctrl_r]:
+        return Key.ctrl
+    if key in [Key.alt_l, Key.alt_r, Key.alt_gr]:
+        return Key.alt
+    if key in [Key.shift_l, Key.shift_r]:
+        return Key.shift
+    if key in [Key.cmd_l, Key.cmd_r]:
+        return Key.cmd
+    return key
+
+def is_mod(key: keyboard.Key | keyboard.KeyCode | None):
+    return key in [Key.ctrl, Key.alt, Key.shift, Key.cmd]
+
+
+def press(key: keyboard.Key | keyboard.KeyCode | None):
+    global output_str
+    global held
+
+    key = normalise_mods(key)
+    if key is None:
+        return
+    elif is_mod(key):
+        held.add(key)
+        return
+    elif isinstance(key, keyboard.KeyCode):
+        if key.char is None:
+            return
+        name = key.char
+    else:
+        name = key.name
+        if name in mappings:
+            name = mappings[name]
+
+    mod = ""
+    if Key.ctrl in held:
+        mod += "C"
+    if Key.alt in held:
+        mod += "A"
+    if Key.cmd in held:
+        mod += "W"
+
+    if Key.shift in held:
+        if mod == "":
+            if name in to_shift:
+                name = to_shift[name]
+            elif name in shift_exceptions:
+                pass
+            else:
+                mod = "S"
+        else:
+            mod += "S"
+
+    if mod != "":
+        name = f"⟨{mod}-{name}⟩"
+    elif name in should_wrap_in_angles:
+        name = f"⟨{name}⟩"
+
+    if isinstance(name, str):
+        output_str = (output_str + name)[-MAX_OUTPUT_LEN:]
+
+    # Ensure no partial brackets
+    opening = output_str.find("⟨")
+    if opening < 0:
+        opening = len(output_str)
+    closing = output_str.find("⟩")
+    if closing < opening:
+        output_str = " " * closing + output_str[closing + 1:]
+
+    # tmux is weird. these are to get around all the exceptions with the status line
+    final_str = output_str.replace("#", "####")
+    final_str = final_str.replace("%", "%%")
+    if final_str.endswith(";"):
+        final_str = final_str + ";"
+    final_str = "#[align=centre]" + final_str
+
+    run(["tmux", "set", "-g", "status-format[1]", final_str])
+
+
+def release(key: keyboard.Key | keyboard.KeyCode | None):
+    key = normalise_mods(key)
+    if key in held:
+        held.remove(key)
+
+
+# Ensure status[1] is visible
+run(["tmux", "set", "-g", "status", "2"])
+run(["tmux", "set", "-g", "status-format[1]", ""])
+
+with keyboard.Listener(on_press=press, on_release=release) as listener:
+    listener.join()

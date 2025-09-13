@@ -9,10 +9,7 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        demo = true;
-      in
-      {
-        devShells.default = pkgs.mkShell {
+        devShell = { demo ? false, recording ? false }: pkgs.mkShell {
           packages = [
             pkgs.stdenv.cc
             pkgs.clang-tools
@@ -32,7 +29,18 @@
             # FreeRTOSDemo
             pkgs.gcc-arm-embedded
             pkgs.qemu
+          ]
+          ++ pkgs.lib.optionals recording [
+            pkgs.asciinema
+            pkgs.python3.pkgs.pynput
           ];
+        };
+      in
+      {
+        devShells = {
+          light = devShell   { demo = false; recording = false; };
+          default = devShell { demo = true;  recording = false; };
+          full = devShell    { demo = true;  recording = true;  };
         };
       }
     );
