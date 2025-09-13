@@ -3,11 +3,7 @@
 #if defined(DEBUG_COBS)
 #include DEBUG_COBS
 #else
-extern int printf(const char *, ...);
-/// Need an expression that contains parameters for parameter pack
-/// Want to avoid linking printf at any optimisation, hence the constexpr if
-/// Want an expression not a statement, hence the lambda wrapper
-#define debugf(...) ([&]{ if constexpr (false) { printf(__VA_ARGS__); } }())
+#include "ndebug.hpp"
 #endif
 
 #include <stdint.h>
@@ -47,7 +43,8 @@ namespace Cobs
     Encoder & Encoder::operator++()
     {
         debugf(
-            "op++ hdr? %s %d/%d/%ld char %02X ->",
+            DEBUG "op++ hdr? %s %d/%d/%ld char %02X ->",
+            START,
             runHeaderOutput ? "done" : "todo",
             runIndex,
             runLength,
@@ -79,7 +76,7 @@ namespace Cobs
             runLength = findRunLength();
         }
         debugf(
-            " hdr? %s %d/%d/%ld char %02X\n",
+            " hdr? %s %d/%d/%ld char %02X" END,
             runHeaderOutput ? "done" : "todo",
             runIndex,
             runLength,
@@ -111,7 +108,7 @@ namespace Cobs
         }
         else if (runLength == 0)
         {
-            debugf("runLength == 0 at byte %02X\n", byte);
+            debugf(DEBUG "runLength == 0 at byte %02X" END, START, byte);
             runLength = byte;
             runLengthWasMax = runLength - 1 == maxRunLength;
         }

@@ -21,17 +21,13 @@ Using template metaprogramming, we can also have type safety in C++.
 
 #pragma once
 
+#include "cbor.hpp"
+
 #if defined(DEBUG_RPC)
 #include DEBUG_RPC
 #else
-extern int printf(const char *, ...);
-/// Need an expression that contains parameters for parameter pack
-/// Want to avoid linking printf at any optimisation, hence the constexpr if
-/// Want an expression not a statement, hence the lambda wrapper
-#define debugf(...) ([&]{ if constexpr (false) { printf(__VA_ARGS__); } }())
+#include "ndebug.hpp"
 #endif
-
-#include "cbor.hpp"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -104,21 +100,21 @@ public:
     {
         if (ptr == nullptr)
         {
-            debugf("function ptr is null, ignoring call\n");
+            debugf(WARN "function ptr is null, ignoring call" END, START);
             return false;
         }
-        debugf("decoding");
+        debugf(DEBUG "decoding", START);
         for (const auto byte : args)
         {
             debugf(" %02X", byte);
         }
-        debugf("\n");
+        debugf(END);
         auto argsTup = Cbor::Cbor<ArgsTup>::decode(args);
         if (argsTup)
         {
-            debugf("function is %p\n", ptr);
+            debugf(DEBUG "function is %p" END, START, ptr);
             Ret retVal = std::apply(ptr, *argsTup);
-            debugf("call returned\n");
+            debugf(DEBUG "call returned" END, START);
             return Cbor::Cbor<Ret>::encode(retVal, ret);
         }
         return false;
@@ -153,6 +149,7 @@ public:
         {
             if (!c.get().schema(seq))
             {
+                debugf(WARN "Schema failed to encode (buf size %zu)" END, START, buf.size());
                 return false;
             }
         }
@@ -161,6 +158,11 @@ public:
 
     bool call(size_t n, std::span<uint8_t> & args, std::span<uint8_t> & ret) const
     {
+        if (n > sizeof...(Calls) + 1)
+        {
+            debugf(WARN "Tried to call function %zu but max is %zu" END, START, n, sizeof...(Calls));
+            return false;
+        }
         return
             n == 0
             ? schema(ret)

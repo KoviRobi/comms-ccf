@@ -13,6 +13,12 @@ buffer) together to be able to do RPC calls.
 #include "cobs.hpp"
 #include "fnv1a.hpp"
 
+#if defined(DEBUG_CCF)
+#include DEBUG_CCF
+#else
+#include "ndebug.hpp"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -61,6 +67,12 @@ public:
         {
             rxBuf.push_back(value);
         }
+        else
+        {
+            // This is expected for the header byte and continuation bytes
+            // (frames >255 bytes without any null terminators)
+            debugf(DEBUG "dropping %02X as !=0 and !do_output" END, START, byte);
+        }
         return false;
     }
 
@@ -93,6 +105,7 @@ public:
             {
                 // TODO: Just using checksumless zero-length packets to
                 // indicate error for now.
+                debugf(WARN "Bad RPC! (len=%zu)" END, START, len);
                 std::ranges::copy("Bad RPC!\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
@@ -107,6 +120,7 @@ public:
             {
                 // TODO: Just using checksumless zero-length packets to
                 // indicate error for now.
+                debugf(WARN "Corrupted request (chan=%u)" END, START, channel);
                 std::ranges::copy("Corrupted request\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
@@ -124,6 +138,9 @@ public:
             auto ret = std::span<uint8_t>(pktBuf + 2, sizeof(pktBuf) - 2 - 4);
             if (!rpc.call(function, span, ret))
             {
+                // TODO: Just using checksumless zero-length packets to
+                // indicate error for now.
+                debugf(WARN "RPC failed (function=%u)" END, START, function);
                 std::ranges::copy("RPC failed\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
@@ -149,3 +166,6 @@ private:
     Cobs::Decoder decoder{};
     uint8_t pktBuf[Config.maxPktSize];
 };
+
+// This is a header, undefine the debugf macro
+#undef debugf

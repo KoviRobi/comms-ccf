@@ -67,6 +67,26 @@ add_build_and_test(
         $<TARGET_FILE:rpc>
 )
 
+add_executable(rpc_debug test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_include_directories(rpc_debug PUBLIC comms-ccf/)
+target_compile_definitions(rpc_debug PUBLIC
+    "DEBUG_CBOR=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_CCF=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_COBS=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_FNV1A=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_RPC=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "STRIP_ROOT=\"${CMAKE_CURRENT_LIST_DIR}/\""
+)
+add_build_and_test(
+    NAME rpc_debug_demo
+    DEPENDS rpc_debug
+    COMMAND
+        "${CMAKE_CURRENT_LIST_DIR}/python/wrap_subprocess.py"
+        --verbose
+        --no-repl
+        $<TARGET_FILE:rpc_debug>
+)
+
 add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)
 target_include_directories(cobs_wrapper PUBLIC comms-ccf/ test/)
 add_library(fnv1a_wrapper SHARED test/fnv1a_wrapper.cpp)

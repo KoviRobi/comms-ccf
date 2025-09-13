@@ -22,6 +22,12 @@ https://softwareengineering.stackexchange.com/a/145633
 
 #pragma once
 
+#if defined(DEBUG_FNV1A)
+#include DEBUG_FNV1A
+#else
+#include "ndebug.hpp"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -78,6 +84,17 @@ namespace Fnv1a
                 (static_cast<uint32_t>(span[end - 3]) <<  8) |
                 (static_cast<uint32_t>(span[end - 2]) << 16) |
                 (static_cast<uint32_t>(span[end - 1]) << 24);
+        if (got == expected)
+        {
+            debugf(INFO "Checksum OK" END, START);
+        }
+        else
+        {
+            debugf(INFO "Checksum got %08X expected %08X" END, START, got, expected);
+        }
         return got == expected;
     }
 };
+
+// This is a header, undefine the debugf macro
+#undef debugf
