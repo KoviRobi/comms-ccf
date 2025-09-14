@@ -50,9 +50,19 @@ async def amain():
     background_tasks.add(channel_task)
     channel_task.add_done_callback(background_tasks.discard)
 
-    while True:
-        log = await channels.recv(1, timeout=math.inf)
-        console.print(log.decode("utf-8", "ignore"))
+    log = await channels.recv(1, timeout=math.inf)
+    console.print(log.decode("utf-8", "ignore"))
+
+    await rpc.discover()
+
+    locals = {k: v for k, v in rpc.methods().items()}
+    locals["help"] = rpc.help
+    locals["dir"] = dir
+
+    console.print("Use help(name=None) for discovered methods")
+    console.print("(optionally name to document just that method)")
+
+    await repl(console, locals)
 
 if __name__ == "__main__":
     asyncio.run(amain())
