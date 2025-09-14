@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 from qtconsole.manager import QtKernelManager
-from qtconsole.rich_jupyter_widget import RichIPythonWidget, RichJupyterWidget
+from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
 colors = [
     ("Red", "#FF0000"),

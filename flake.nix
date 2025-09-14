@@ -24,6 +24,7 @@
             pkgs.python3.pkgs.cobs
             pkgs.python3.pkgs.cbor
             pkgs.python3.pkgs.fnv-hash-fast
+            pkgs.python3.pkgs.tkinter
             pkgs.python3.pkgs.ipython
             pkgs.python3.pkgs.pyside6
             pkgs.python3.pkgs.qtconsole
