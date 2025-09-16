@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import sys
 
 from PySide6.QtCore import Qt
@@ -65,16 +64,19 @@ class MainWindow(QMainWindow):
         kernel_client = kernel_manager.client()
         kernel_client.start_channels()
 
-        jupyter_widget = RichJupyterWidget()
+        jupyter_widget = RichJupyterWidget(width=120)
         jupyter_widget.kernel_manager = kernel_manager
         jupyter_widget.kernel_client = kernel_client
+        kernel_client.execute("x = 'hello world'", store_history=False)
         dock.setWidget(jupyter_widget)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, dock)
+        jupyter_widget._control.setFocus()
 
 
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
+    app.setStyleSheet("* { font-size: 18pt; }")
 
     win = MainWindow()
     win.show()
