@@ -45,9 +45,8 @@ namespace Fnv1a
     }
 
     template<size_t Size>
-    constexpr uint32_t checksum(std::span<uint8_t, Size> span)
+    constexpr uint32_t checksum(std::span<uint8_t, Size> span, uint32_t hash = initialHash)
     {
-        uint32_t hash = initialHash;
         for (auto c : span)
         {
             hash = feed(hash, c);
@@ -56,14 +55,14 @@ namespace Fnv1a
     }
 
     template<size_t Size>
-    constexpr void putAtEnd(std::span<uint8_t, Size> span)
+    constexpr void putAtEnd(std::span<uint8_t, Size> span, uint32_t hash = initialHash)
     {
         size_t end = span.size();
         if (end < 4)
         {
             return;
         }
-        const uint32_t got = checksum(span.first(end - 4));
+        const uint32_t got = checksum(span.first(end - 4), hash);
         span[end - 4] = static_cast<uint32_t>(got) >>  0;
         span[end - 3] = static_cast<uint32_t>(got) >>  8;
         span[end - 2] = static_cast<uint32_t>(got) >> 16;
@@ -71,14 +70,14 @@ namespace Fnv1a
     }
 
     template<size_t Size>
-    constexpr bool checkAtEnd(std::span<uint8_t, Size> span)
+    constexpr bool checkAtEnd(std::span<uint8_t, Size> span, uint32_t hash = initialHash)
     {
         size_t end = span.size();
         if (end < 4)
         {
             return false;
         }
-        const uint32_t got = checksum(span.first(end - 4));
+        const uint32_t got = checksum(span.first(end - 4), hash);
         const uint32_t expected =
                 (static_cast<uint32_t>(span[end - 4]) <<  0) |
                 (static_cast<uint32_t>(span[end - 3]) <<  8) |
