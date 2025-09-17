@@ -63,11 +63,11 @@ class MainWindow(QMainWindow):
 
         kernel_client = kernel_manager.client()
         kernel_client.start_channels()
+        kernel_client.execute("x = 'hello world'", store_history=False)
 
         jupyter_widget = RichJupyterWidget(width=120)
         jupyter_widget.kernel_manager = kernel_manager
         jupyter_widget.kernel_client = kernel_client
-        kernel_client.execute("x = 'hello world'", store_history=False)
         dock.setWidget(jupyter_widget)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, dock)
         jupyter_widget._control.setFocus()
