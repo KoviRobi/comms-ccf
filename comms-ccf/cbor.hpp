@@ -568,6 +568,46 @@ typedef _Float16 half;
         }
     };
 
+    template<size_t Size>
+    struct Cbor<std::span<uint8_t, Size>>
+    {
+        static bool encode(std::span<uint8_t, Size> span, std::span<uint8_t> & buf)
+        {
+            if (buf.size() < 1)
+            {
+                return false;
+            }
+            if (!::Cbor::encode<size_t>(Major::Bytes, span.size(), buf))
+            {
+                return false;
+            }
+            for (const auto & item : span)
+            {
+                if (!Cbor<uint8_t>::encode(item, buf))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        static std::optional<std::span<uint8_t, Size>> decode(std::span<uint8_t> & buf)
+        {
+            auto value = unpack(buf);
+            if (value.has_value() && value->major == Major::Bytes)
+            {
+                if (value->minor == Minor::Indefinite)
+                {
+                    return {};
+                }
+                else
+                {
+                    return {buf};
+                }
+            }
+            return {};
+        }
+    };
+
     template<typename T, size_t Size>
     struct Cbor<std::array<T, Size>>
     {
@@ -577,7 +617,7 @@ typedef _Float16 half;
             {
                 return false;
             }
-            if (!encode<size_t>(Major::Array, array.size(), buf))
+            if (!::Cbor::encode<size_t>(Major::Array, array.size(), buf))
             {
                 return false;
             }

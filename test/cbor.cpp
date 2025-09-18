@@ -35,6 +35,7 @@ There are a few parts to this code:
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <regex>
 #include <string>
 #include <string_view>
@@ -51,8 +52,13 @@ bool eq(T a, T b) requires (requires(T t) { std::isnan(t); })
 {
     return (a == b) || (std::isnan(a) && std::isnan(b));
 }
-template<typename T>
+template<std::ranges::range T>
 bool eq(T a, T b) requires (!requires(T t) { std::isnan(t); })
+{
+    return std::ranges::equal(a, b);
+}
+template<typename T>
+bool eq(T a, T b) requires (!requires(T t) { std::isnan(t); } && !std::ranges::range<T>)
 {
     return a == b;
 }
@@ -117,6 +123,42 @@ static bool parse_bytes(std::string s, std::vector<uint8_t> & into)
         return false;
     }
     return true;
+}
+
+/// Parse a byte string (sequence of bytes/base16)
+template<>
+struct Parse<std::span<uint8_t>>
+{
+    static std::optional<std::span<uint8_t>> parse(std::string s)
+    {
+        static std::vector<uint8_t> into;
+        into.clear();
+        std::regex literal{"h'((?:[0-9a-fA-F]{2})*)'"};
+        std::smatch m;
+        if (
+            std::regex_match(s.cbegin(), s.cend(), m, literal) &&
+            parse_bytes(m[1], into)
+        )
+        {
+            return {into};
+        }
+        return {};
+    }
+};
+
+static std::ostream & operator<<(std::ostream & os, const std::span<uint8_t> span)
+{
+    auto fill = os.fill();
+    auto width = os.width();
+    for (uint8_t byte : span)
+    {
+        os.fill('0');
+        os.width(2);
+        os << byte;
+    }
+    os.fill(fill);
+    os.width(width);
+    return os;
 }
 
 int main(int argc, char ** argv)
@@ -216,6 +258,7 @@ int main(int argc, char ** argv)
 #endif
         else DISPATCH(float)
         else DISPATCH(double)
+        else DISPATCH(std::span<uint8_t>)
         else if (m[Type] != "N/A" && m[Type].str().substr(0, 4) != "Skip")
         {
             std::cout << YELLOW << "Don't know how to test "
