@@ -85,15 +85,15 @@ namespace Fnv1a
                 (static_cast<uint32_t>(span[end - 1]) << 24);
         if (got == expected)
         {
-            debugf(INFO "Checksum OK" END, START);
+            debugf(INFO "Checksum OK" END START);
         }
         else
         {
-            debugf(INFO "Checksum got %08X expected %08X" END, START, got, expected);
+            debugf(INFO "Checksum got %08X expected %08X" END START, got, expected);
         }
         return got == expected;
     }
 };
 
 // This is a header, undefine the debugf macro
-#undef debugf
+#include "debug_end.hpp"

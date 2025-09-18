@@ -279,3 +279,5 @@ private:
     size_t write = 0;
     bool dropped = false;
 };
+
+// This is a header, undefine the debugf macro

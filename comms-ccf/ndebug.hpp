@@ -1,6 +1,11 @@
 /**
 
-The common debug ignore macros
+The common debug ignore macros. If including this in a header, don't
+forget to:
+
+```
+#include "debug_end.hpp"
+```
 
 */
 
@@ -19,7 +24,7 @@ extern void ignoreVarArgs(...);
 /// Start of debug printing format arguments -- always specify when
 /// using DEBUG/INFO/WARN/ERROR
 #ifndef START
-#define START 0
+#define START
 #endif
 
 /// Debug levels at the start of debugf
@@ -45,5 +50,5 @@ extern void ignoreVarArgs(...);
 #endif
 
 #else
-#error debugf already defined, did you forget to `#undef debugf` at the end of a header?
+#error debugf already defined, did you forget to `#include "debug_end.hpp"` at the end of a header?
 #endif
