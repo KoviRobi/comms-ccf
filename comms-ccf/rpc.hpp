@@ -174,4 +174,4 @@ public:
 };
 
 // This is a header, undefine the debugf macro
-#undef debugf
+#include "debug_end.hpp"

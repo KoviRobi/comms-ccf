@@ -4,7 +4,7 @@ Colorize debug levels
 
 */
 
-#pragma once
+#ifndef debugf
 
 #define BLACK      30
 #define RED        31
@@ -27,6 +27,7 @@ Colorize debug levels
 #define COL(c)    "\x1b[" _STR(c) "m"
 #define RESET     "\x1b[0m"
 
+#ifndef STRIP_FILE_DEFINED
 #ifndef STRIP_ROOT
 /// Return the last three filepath components
 constexpr const char * strip___FILE__(const char * file)
@@ -42,6 +43,7 @@ constexpr const char * strip___FILE__(const char * file)
     }
     return &file[slashes[slash % (sizeof(slashes) / sizeof(slashes[0]))]];
 }
+#define STRIP_FILE_DEFINED
 #else
 /// Strip a predefined prefix given by STRIP_ROOT
 constexpr const char * strip___FILE__(const char * file)
@@ -54,6 +56,8 @@ constexpr const char * strip___FILE__(const char * file)
     }
     return file;
 }
+#define STRIP_FILE_DEFINED
+#endif
 #endif
 
 /// Start of debug log
@@ -65,3 +69,7 @@ constexpr const char * strip___FILE__(const char * file)
 #define ERROR COL(RED)      "%s:%u error: "
 /// Terminator of log message at the end
 #define END RESET "\n"
+
+#else
+#error debugf already defined, did you forget to `#include "debug_end.hpp"` at the end of a header?
+#endif
