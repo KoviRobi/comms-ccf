@@ -60,6 +60,12 @@ TODO: Forward and bidirectional iterator/range for Iterator/Notification.
 
 #include "types.hpp"
 
+#if defined(DEBUG_CIRC_BUF)
+#include DEBUG_CIRC_BUF
+#else
+#include "ndebug.hpp"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -242,11 +248,17 @@ public:
         notification.reset();
         if (dropped)
         {
+            debugf(DEBUG "No packet as truncating" END LOGLEVEL_ARGS);
             return false;
         }
         /// Read once
         auto start = read;
         const auto end = notified;
+        if (start == end)
+        {
+            // No next packet, compare with the next two `start != end`
+            return false;
+        }
         size_t size = 0;
         for (size_t i = sizeBytes; i > 0; --i)
         {
@@ -255,10 +267,20 @@ public:
                 size <<= 8;
                 size |= buf[start++ % Size];
             }
+            else
+            {
+                // A bad state, and we checked for truncating above
+                debugf(ERROR "Truncated next packet size" END);
+            }
         }
         if (start != end)
         {
             notification.emplace(this, start, size);
+        }
+        else
+        {
+            // Almost certainly an error, we checked for truncating above
+            debugf(ERROR "Zero length item" END LOGLEVEL_ARGS);
         }
         return notification.has_value();
     }

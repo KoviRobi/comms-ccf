@@ -35,6 +35,7 @@ cmake_path(SET debug_dir NORMALIZE "${CMAKE_CURRENT_LIST_DIR}/../debug")
 target_compile_definitions(FreeRTOS-Demo PUBLIC
     "$<$<CONFIG:Debug>:DEBUG_CBOR=\"${debug_dir}/stderr.hpp\">"
     "$<$<CONFIG:Debug>:DEBUG_CCF=\"${debug_dir}/stderr.hpp\">"
+    "$<$<CONFIG:Debug>:DEBUG_CIRC_BUF=\"${debug_dir}/stderr.hpp\">"
     "$<$<CONFIG:Debug>:DEBUG_COBS=\"${debug_dir}/stderr.hpp\">"
     "$<$<CONFIG:Debug>:DEBUG_FNV1A=\"${debug_dir}/stderr.hpp\">"
     "$<$<CONFIG:Debug>:DEBUG_RPC=\"${debug_dir}/stderr.hpp\">"
