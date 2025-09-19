@@ -97,7 +97,7 @@ static void vUart0Int( void )
     }
     if (interrupt & UART_INT_TX)
     {
-        commsCcfTxNext();
+        commsCcfTxDone();
     }
 }
 

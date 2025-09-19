@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <array>
+#include <atomic>
 #include <string_view>
 
 using namespace std::literals;
@@ -23,6 +24,11 @@ Mutex<Ccf<{
 }>> ccf;
 
 static TaskHandle_t rxTask;
+
+/// Used to ensure we don't try to send a character while another one
+/// is already in progress. When this is set, we are either about to
+/// send a character, or the callback hasn't arrived yet.
+static std::atomic_bool txBusy;
 
 static const auto version = std::to_array<std::string_view>({
     "main"sv,
@@ -63,8 +69,7 @@ void commsCcfRx(uint8_t byte)
     }
 }
 
-/// Called by the UART interrupt handler when a character has finished
-/// transmitting.
+/// Try and send the next character
 void commsCcfTxNext()
 {
     static std::optional<decltype(ccf)::Underlying::TxNotification> toTx{};
@@ -78,6 +83,7 @@ void commsCcfTxNext()
     {
         const char c = *toTx->begin();
         ++toTx->begin();
+        txBusy = true;
         commsCcfTx(c);
     }
     // Not else -- iterator changed
@@ -87,14 +93,25 @@ void commsCcfTxNext()
     }
 }
 
+/// Called by the UART interrupt handler when a character has finished
+/// transmitting.
+void commsCcfTxDone()
+{
+    txBusy = false;
+    commsCcfTxNext();
+}
+
 /// Note: because `commsCcfTxNext` calls `commsCcfTx` which might finish
 /// instantly, we need to protect it with a critical section to avoid
 /// issues due to reentrancy.
-void commsCcfTxNextFromApplication()
+void commsCcfTxAvailable()
 {
     // TODO: Check UART is not busy?
     portENTER_CRITICAL();
-    commsCcfTxNext();
+    if (!txBusy)
+    {
+        commsCcfTxNext();
+    }
     portEXIT_CRITICAL();
 }
 
@@ -116,7 +133,7 @@ void commsCcfProcessTask(void *)
         if (ccf.unsafeGetUnderlying().poll(rpc))
         {
             // Kick TX
-            commsCcfTxNextFromApplication();
+            commsCcfTxAvailable();
         }
     }
 }
