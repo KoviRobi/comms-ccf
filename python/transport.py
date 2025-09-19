@@ -1,7 +1,7 @@
 import typing as t
 from asyncio import StreamReader, StreamWriter
 
-from cobs.cobs import decode, encode, DecodeError
+from cobs.cobs import DecodeError, decode, encode
 from fnv_hash_fast import fnv1a_32
 from hexdump import hexdump
 
@@ -44,6 +44,7 @@ class StreamTransport:
         await self._tx.drain()
 
     async def recv(self, *, timeout: float = DEFAULT_TIMEOUT) -> tuple[int, bytes]:
+        # TODO: timeouts, MAX_PKT_SIZE
         data = await self._rx.readuntil(b"\0")
         if self._log:
             print(hexdump(data, "RX: "), file=self._log)

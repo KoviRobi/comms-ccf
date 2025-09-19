@@ -21,16 +21,28 @@ buffer) together to be able to do RPC calls.
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <algorithm>
 #include <iterator>
 #include <optional>
+#include <span>
 
 struct CcfConfig
 {
     size_t rxBufSize;
     size_t txBufSize;
     size_t maxPktSize;
+};
+
+enum class Channels : uint8_t
+{
+    Rpc = 0,
+    Log = 1,
+    // TODO: In-place trace tag to save bytes on trace data?
+    Trace = 2,
+    // TODO: Reserve some bits for flags? E.g. fragment/partial packet
+    // flag, CCF metadata/error flag?
 };
 
 template<CcfConfig Config>
@@ -158,20 +170,57 @@ public:
                 output = true;
                 continue;
             }
-
-            // +4 for the checksum, the start bytes are accounted for
-            auto respLen = static_cast<size_t>(ret.data() - pktBuf) + 4;
-            std::span resp{pktBuf, respLen};
-            Fnv1a::putAtEnd(resp);
-            for (auto c : Cobs::Encoder(resp))
-            {
-                txBuf.push_back(c);
-            }
-            txBuf.push_back(static_cast<uint8_t>(0));
-            txBuf.notify();
-            output = true;
+            auto respLen = static_cast<size_t>(ret.data() - pktBuf);
+            std::span resp{pktBuf + sizeof(channel), respLen - sizeof(channel)};
+            output = output || send(Channels::Rpc, resp);
         }
         return output;
+    }
+
+    /// **Not threadsafe** use a mutex
+    ///
+    /// Put some messaget to be sent, returns true if it has succeeded
+    /// (and therefore you should call the function to send messages
+    /// from the queue).
+    ///
+    /// TODO: Maybe could be re-entrant/support adding from ISR without
+    /// locking by exchanging the ISR data buffer with the data not yet
+    /// notified, then putting the data not yet notified back after. This
+    /// would make it only not threadsafe for normal tasks which might
+    /// get switched out between each-other
+    bool send(Channels channel, std::span<uint8_t> & data)
+    {
+        const size_t toSend = data.size() + sizeof(channel) + Fnv1a::size;
+        if (toSend > sizeof(pktBuf))
+        {
+            debugf("Data for send too large\n");
+            return false;
+        }
+        std::span resp{pktBuf, toSend};
+        uint8_t chan = static_cast<uint8_t>(channel);
+        resp[0] = chan;
+        // Note: memmove caters for overlapping pktBuf/data (though no
+        // need to move if it is already in place)
+        if (&data[0] != &resp[1])
+        {
+            memmove(&resp[1], data.data(), data.size_bytes());
+        }
+        Fnv1a::putAtEnd(resp);
+        for (auto c : Cobs::Encoder(resp))
+        {
+            txBuf.push_back(c);
+        }
+        txBuf.push_back(static_cast<uint8_t>(0));
+        if (txBuf.dropping())
+        {
+            txBuf.reset_dropped();
+            return false;
+        }
+        else
+        {
+            txBuf.notify();
+            return true;
+        }
     }
 
 private:

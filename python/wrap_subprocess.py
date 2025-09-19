@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
+import asyncio
 import sys
 import time
 from argparse import ArgumentParser
-from asyncio import create_subprocess_exec, run
 from asyncio.subprocess import PIPE
 from pathlib import Path
 from shlex import quote
 from shutil import which
 
+from background import BackgroundTasks
+from channel import Channels
 from repl import repl
 from rpc import Rpc
 from transport import StreamTransport
@@ -27,7 +29,7 @@ async def amain():
     executable: Path = Path(which(args.executable))
     assert executable.exists(), f"File {quote(str(executable))} doesn't exist"
 
-    proc = await create_subprocess_exec(
+    proc = await asyncio.create_subprocess_exec(
         executable, *args.arguments, stdin=PIPE, stdout=PIPE
     )
     assert proc.stdin is not None
@@ -35,7 +37,12 @@ async def amain():
     transport = StreamTransport(
         proc.stdout, proc.stdin, sys.stderr if args.verbose else None
     )
-    rpc = Rpc(transport)
+    loop = asyncio.get_event_loop()
+    background_tasks = BackgroundTasks(loop)
+    channels = Channels(transport, loop)
+    channels.open_channel(0)
+    background_tasks.add(channels.loop)
+    rpc = Rpc(channels)
 
     while True:
         try:
@@ -62,4 +69,4 @@ async def amain():
 
 
 if __name__ == "__main__":
-    run(amain())
+    asyncio.run(amain())

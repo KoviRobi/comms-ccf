@@ -6,6 +6,8 @@ import sys
 import time
 from argparse import ArgumentParser
 
+from background import BackgroundTasks
+from channel import Channels
 from repl import repl
 from rpc import Rpc
 from transport import StreamTransport
@@ -22,7 +24,12 @@ async def amain():
     global rx, tx, transport, rpc
     rx, tx = await asyncio.open_connection(args.host, args.port)
     transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
-    rpc = Rpc(transport)
+    loop = asyncio.get_event_loop()
+    background_tasks = BackgroundTasks(loop)
+    channels = Channels(transport, loop)
+    channels.open_channel(0)
+    background_tasks.add(channels.loop)
+    rpc = Rpc(channels)
 
     while True:
         try:
