@@ -20,8 +20,11 @@ extern Mutex<Ccf<{
 /// Implement this in FreeRTOS for transport TX
 extern void commsCcfTx(uint8_t byte);
 
-/// Call this when you know there is data to TX or TX has finished
-void commsCcfTxNext();
+/// Call this from an interrupt context, when  TX has finished.
+void commsCcfTxDone();
+
+/// Call this from an application context, when there is data to send.
+void commsCcfTxAvailable();
 
 /// Add this to the transport RX callback
 void commsCcfRx(uint8_t byte);
