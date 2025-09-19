@@ -23,8 +23,8 @@ extern void ignoreVarArgs(...);
 
 /// Start of debug printing format arguments -- always specify when
 /// using DEBUG/INFO/WARN/ERROR
-#ifndef START
-#define START 0
+#ifndef LOGLEVEL_ARGS
+#define LOGLEVEL_ARGS
 #endif
 
 /// Debug levels at the start of debugf

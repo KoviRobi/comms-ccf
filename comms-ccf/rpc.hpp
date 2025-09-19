@@ -100,10 +100,10 @@ public:
     {
         if (ptr == nullptr)
         {
-            debugf(WARN "function ptr is null, ignoring call" END, START);
+            debugf(WARN "function ptr is null, ignoring call" END LOGLEVEL_ARGS);
             return false;
         }
-        debugf(DEBUG "decoding", START);
+        debugf(DEBUG "decoding" LOGLEVEL_ARGS);
         for (const auto byte : args)
         {
             debugf(" %02X", byte);
@@ -112,9 +112,9 @@ public:
         auto argsTup = Cbor::Cbor<ArgsTup>::decode(args);
         if (argsTup)
         {
-            debugf(DEBUG "function is %p" END, START, ptr);
+            debugf(DEBUG "function is %p" END LOGLEVEL_ARGS, ptr);
             Ret retVal = std::apply(ptr, *argsTup);
-            debugf(DEBUG "call returned" END, START);
+            debugf(DEBUG "call returned" END LOGLEVEL_ARGS);
             return Cbor::Cbor<Ret>::encode(retVal, ret);
         }
         return false;
@@ -149,7 +149,7 @@ public:
         {
             if (!c.get().schema(seq))
             {
-                debugf(WARN "Schema failed to encode (buf size %zu)" END, START, buf.size());
+                debugf(WARN "Schema failed to encode (buf size %zu)" END LOGLEVEL_ARGS, buf.size());
                 return false;
             }
         }
@@ -160,7 +160,7 @@ public:
     {
         if (n > sizeof...(Calls) + 1)
         {
-            debugf(WARN "Tried to call function %zu but max is %zu" END, START, n, sizeof...(Calls));
+            debugf(WARN "Tried to call function %zu but max is %zu" END LOGLEVEL_ARGS, n, sizeof...(Calls));
             return false;
         }
         return

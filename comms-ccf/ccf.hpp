@@ -71,7 +71,7 @@ public:
         {
             // This is expected for the header byte and continuation bytes
             // (frames >255 bytes without any null terminators)
-            debugf(DEBUG "dropping %02X as !=0 and !do_output" END, START, byte);
+            debugf(DEBUG "dropping %02X as !=0 and !do_output" END LOGLEVEL_ARGS, byte);
         }
         return false;
     }
@@ -110,7 +110,7 @@ public:
             {
                 // TODO: Just using checksumless zero-length packets to
                 // indicate error for now.
-                debugf(WARN "Bad RPC! (len=%zu)" END, START, len);
+                debugf(WARN "Bad RPC! (len=%zu)" END LOGLEVEL_ARGS, len);
                 std::ranges::copy("Bad RPC!\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
@@ -126,7 +126,7 @@ public:
             {
                 // TODO: Just using checksumless zero-length packets to
                 // indicate error for now.
-                debugf(WARN "Corrupted request (chan=%u)" END, START, channel);
+                debugf(WARN "Corrupted request (chan=%u)" END LOGLEVEL_ARGS, channel);
                 std::ranges::copy("Corrupted request\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();
@@ -147,7 +147,7 @@ public:
             {
                 // TODO: Just using checksumless zero-length packets to
                 // indicate error for now.
-                debugf(WARN "RPC failed (function=%u)" END, START, function);
+                debugf(WARN "RPC failed (function=%u)" END LOGLEVEL_ARGS, function);
                 std::ranges::copy("RPC failed\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
                 txBuf.notify();

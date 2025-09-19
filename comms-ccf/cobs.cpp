@@ -43,8 +43,7 @@ namespace Cobs
     Encoder & Encoder::operator++()
     {
         debugf(
-            DEBUG "op++ hdr? %s %d/%d/%ld char %02X ->",
-            START,
+            DEBUG "op++ hdr? %s %d/%d/%ld char %02X ->" LOGLEVEL_ARGS,
             runHeaderOutput ? "done" : "todo",
             runIndex,
             runLength,
@@ -108,7 +107,7 @@ namespace Cobs
         }
         else if (runLength == 0)
         {
-            debugf(DEBUG "runLength == 0 at byte %02X" END, START, byte);
+            debugf(DEBUG "runLength == 0 at byte %02X" END LOGLEVEL_ARGS, byte);
             runLength = byte;
             runLengthWasMax = runLength - 1 == maxRunLength;
         }

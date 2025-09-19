@@ -61,7 +61,7 @@ constexpr const char * strip___FILE__(const char * file)
 #endif
 
 /// Start of debug log
-#define START strip___FILE__(__FILE__), __LINE__
+#define LOGLEVEL_ARGS , strip___FILE__(__FILE__), __LINE__
 /// Debug levels at the start of debugf
 #define DEBUG COL(BRBLACK)  "%s:%u debug: "
 #define INFO  COL(CYAN)     "%s:%u info:  "

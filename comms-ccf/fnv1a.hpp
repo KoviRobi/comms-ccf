@@ -85,11 +85,11 @@ namespace Fnv1a
                 (static_cast<uint32_t>(span[end - 1]) << 24);
         if (got == expected)
         {
-            debugf(INFO "Checksum OK" END, START);
+            debugf(INFO "Checksum OK" END LOGLEVEL_ARGS);
         }
         else
         {
-            debugf(INFO "Checksum got %08X expected %08X" END, START, got, expected);
+            debugf(INFO "Checksum got %08X expected %08X" END LOGLEVEL_ARGS, got, expected);
         }
         return got == expected;
     }
