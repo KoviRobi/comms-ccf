@@ -1,10 +1,20 @@
 #pragma once
 
-#include <stdint.h>
+#ifdef __cplusplus
+#include <ccf.hpp>
+
+#include "mutex.hpp"
+#endif
 
 #ifdef __cplusplus
 extern "C"
 {
+
+extern Mutex<Ccf<{
+    .rxBufSize = 256,
+    .txBufSize = 256,
+    .maxPktSize = 255,
+}>> ccf;
 #endif
 
 /// Implement this in FreeRTOS for transport TX

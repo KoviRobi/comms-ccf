@@ -16,11 +16,11 @@ using namespace std::literals;
 static StackType_t commsCcfStack[1024];
 static StaticTask_t commsCcfTcb;
 
-static Ccf<{
+Mutex<Ccf<{
     .rxBufSize = 256,
     .txBufSize = 256,
     .maxPktSize = 255,
-}> ccf;
+}>> ccf;
 
 static TaskHandle_t rxTask;
 
@@ -45,11 +45,11 @@ static Rpc rpc{
     Call("hello", "greet", {}, +[]() { return "Hello world"sv; }),
 };
 
-
 /// Called by the UART interrupt handler when it receives a character.
 void commsCcfRx(uint8_t byte)
 {
-    if (ccf.receiveCharacter(byte))
+    // Safety: called from the UART interrupt handler
+    if (ccf.unsafeGetUnderlying().receiveCharacter(byte))
     {
         /// Uses FreeRTOS direct task notifications to act as a semaphore:
         /// this is called from an interrupt to tell the RPC handler
@@ -67,11 +67,11 @@ void commsCcfRx(uint8_t byte)
 /// transmitting.
 void commsCcfTxNext()
 {
-    static std::optional<decltype(ccf)::TxNotification> toTx{};
+    static std::optional<decltype(ccf)::Underlying::TxNotification> toTx{};
 
     if (!toTx)
     {
-        ccf.charactersToSend(toTx);
+        ccf.unsafeGetUnderlying().charactersToSend(toTx);
     }
     // Not else -- toTx may have changed
     if (toTx && toTx->begin() != toTx->end())
@@ -92,6 +92,7 @@ void commsCcfTxNext()
 /// issues due to reentrancy.
 void commsCcfTxNextFromApplication()
 {
+    // TODO: Check UART is not busy?
     portENTER_CRITICAL();
     commsCcfTxNext();
     portEXIT_CRITICAL();
@@ -111,9 +112,9 @@ void commsCcfProcessTask(void *)
             // Maybe do some action e.g. ticke watchdog
             continue;
         }
-        if (ccf.poll(rpc))
+        // Safety: Called from a single thread
+        if (ccf.unsafeGetUnderlying().poll(rpc))
         {
-            printf("Sending response\n");
             // Kick TX
             commsCcfTxNextFromApplication();
         }

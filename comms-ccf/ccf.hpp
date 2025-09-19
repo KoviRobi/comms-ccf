@@ -41,6 +41,10 @@ public:
     using TxNotification = CircularBuffer<uint8_t, Config.txBufSize, Config.maxPktSize>::Notification;
 
     /// Safe to call from interrupt context
+    /// **Not threadsafe** only call from a single communications
+    /// channel's interrupt callback. If you want to use multiple
+    /// communications channels multiplexed, you could use separate SPSC
+    /// queues feeding into this queue.
     ///
     /// Call this with any characters received on the transport. It
     /// returns `true` if it is time to call `poll`.
@@ -82,7 +86,7 @@ public:
         return txBuf.get_notification(notification);
     }
 
-    /// **Not multithreaded**
+    /// **Not threadsafe** only call from one thread
     /// **Not safe to call from an interrupt context**
     ///
     /// Process any incoming packets. Returns true if there is an output
