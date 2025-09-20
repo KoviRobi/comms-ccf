@@ -14,6 +14,7 @@ add_subdirectory("${FREERTOS_KERNEL}" FreeRTOS_Kernel)
 add_executable(FreeRTOS-Demo
     startup.c
     main.c
+    log.cpp
     comms-ccf.cpp
 
     ../comms-ccf/cbor.cpp

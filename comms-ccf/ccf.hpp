@@ -19,8 +19,10 @@ buffer) together to be able to do RPC calls.
 #include "ndebug.hpp"
 #endif
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <algorithm>
@@ -43,6 +45,15 @@ enum class Channels : uint8_t
     Trace = 2,
     // TODO: Reserve some bits for flags? E.g. fragment/partial packet
     // flag, CCF metadata/error flag?
+};
+
+enum class LogLevel : uint8_t
+{
+    Debug,
+    Info,
+    Warn,
+    Error,
+
 };
 
 template<CcfConfig Config>
@@ -197,14 +208,14 @@ public:
             return false;
         }
         std::span resp{pktBuf, toSend};
-        uint8_t chan = static_cast<uint8_t>(channel);
-        resp[0] = chan;
         // Note: memmove caters for overlapping pktBuf/data (though no
         // need to move if it is already in place)
         if (&data[0] != &resp[1])
         {
             memmove(&resp[1], data.data(), data.size_bytes());
         }
+        uint8_t chan = static_cast<uint8_t>(channel);
+        resp[0] = chan;
         Fnv1a::putAtEnd(resp);
         for (auto c : Cobs::Encoder(resp))
         {
@@ -221,6 +232,45 @@ public:
             txBuf.notify();
             return true;
         }
+    }
+
+    /// **Not threadsafe** use a mutex
+    ///
+    /// Log some data. Returns the number of bytes logged, or nullopt
+    /// if it failed to log.
+    ///
+    /// TODO: Deferred formatting
+    /// TODO: Optionally just send the format string pointer (if it is
+    /// in .rodata) and the client can read it from the ELF file (or
+    /// download it separately)
+    std::optional<uint32_t> log(LogLevel level, uint8_t module, const char * fmt, ...)
+    {
+        if (module > (1 << 5) - 1)
+        {
+            return {};
+        }
+        uint8_t initialByte = (static_cast<uint8_t>(level) << 5) | module;
+        std::span<uint8_t> span{pktBuf};
+        span[0] = initialByte;
+        va_list args;
+        va_start(args, fmt);
+        int written = vsnprintf(
+            reinterpret_cast<char *>(span.data()) + 1,
+            span.size() - 1,
+            fmt,
+            args
+        );
+        va_end(args);
+        if (written < 0)
+        {
+            return {};
+        }
+        span = span.first(sizeof(initialByte) + written);
+        if (send(Channels::Log, span))
+        {
+            return {written};
+        }
+        return {};
     }
 
 private:

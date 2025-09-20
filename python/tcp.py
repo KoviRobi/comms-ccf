@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 
 from background import BackgroundTasks
 from channel import Channels
+from log import print_logs
 from repl import repl
 from rpc import Rpc
 from transport import StreamTransport
@@ -30,6 +31,8 @@ async def amain():
     channels.open_channel(0)
     background_tasks.add(channels.loop)
     rpc = Rpc(channels)
+
+    background_tasks.add(print_logs, channels)
 
     while True:
         try:
