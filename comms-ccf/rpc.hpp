@@ -22,6 +22,7 @@ Using template metaprogramming, we can also have type safety in C++.
 #pragma once
 
 #include "cbor.hpp"
+#include "comptime_str.hpp"
 
 #if defined(DEBUG_RPC)
 #include DEBUG_RPC
@@ -39,17 +40,30 @@ Using template metaprogramming, we can also have type safety in C++.
 #include <tuple>
 #include <utility>
 
+#define LITERAL_COMPTIME_STRING(name, value) const decltype(CompTimeString{value}) name{value}
 template<typename T>
-constexpr const char * pyType = "unknown";
+struct Type { static constexpr CompTimeString python = "Any"; };
 
 template<std::integral I>
-constexpr const char * pyType<I> = "int";
+struct Type<I> { static constexpr CompTimeString python = "int"; };
 
 template<>
-constexpr const char * pyType<std::string_view> = "str";
+struct Type<std::string_view> { static constexpr CompTimeString python = "str"; };
 
 template<size_t extent>
-constexpr const char * pyType<std::span<uint8_t, extent>> = "bytes";
+struct Type<std::span<uint8_t, extent>> { static constexpr CompTimeString python = "bytes"; };
+
+template<>
+struct Type<std::tuple<>> { static constexpr CompTimeString python{"tuple[()]"}; };
+template<typename... Ts>
+struct Type<std::tuple<Ts...>>
+{
+    constexpr static CompTimeString python{
+        CompTimeString{"tuple["} +
+        (..., Type<Ts>::python) +
+        CompTimeString{"]"}
+    };
+};
 
 class AbstractCall
 {
@@ -82,13 +96,14 @@ public:
         return
             subseq.encode(std::string_view(name)) &&
             subseq.encode(std::string_view(doc)) &&
-            subseq.encode(std::string_view(pyType<Return>)) &&
+            subseq.encode(static_cast<std::string_view>(Type<Return>::python)) &&
             [&]<size_t... Idx>(std::index_sequence<Idx...>)
             {
                 return (
                     (
                         subseq.encode(std::string_view(argNames[Idx])) &&
-                        subseq.encode(std::string_view(pyType<std::tuple_element_t<Idx, ArgsTup>>))
+                        subseq.encode(static_cast<std::string_view>(
+                            Type<std::tuple_element_t<Idx, ArgsTup>>::python))
                     ) &&
                     ...
                 );
