@@ -6,7 +6,6 @@ project(FreeRTOS-Demo LANGUAGES CXX C ASM)
 
 set(FREERTOS_KERNEL "${CMAKE_CURRENT_LIST_DIR}/FreeRTOS-Kernel")
 set(FREERTOS_PORT GCC_ARM_CM3)
-set(FREERTOS_HEAP 4)
 add_library(freertos_config INTERFACE)
 target_include_directories(freertos_config INTERFACE .)
 add_subdirectory("${FREERTOS_KERNEL}" FreeRTOS_Kernel)

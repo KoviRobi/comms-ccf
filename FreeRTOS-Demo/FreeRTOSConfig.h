@@ -56,6 +56,7 @@
 #define configCHECK_FOR_STACK_OVERFLOW  2
 #define configUSE_QUEUE_SETS            1
 #define configUSE_COUNTING_SEMAPHORES   1
+#define configSUPPORT_DYNAMIC_ALLOCATION 0
 
 #define configMAX_PRIORITIES            ( 6UL )
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
@@ -90,7 +91,7 @@ to exclude the API function. */
 format the raw data provided by the uxTaskGetSystemState() function in to human
 readable ASCII form.  See the notes in the implementation of vTaskList() within
 FreeRTOS/Source/tasks.c for limitations. */
-#define configUSE_STATS_FORMATTING_FUNCTIONS    1
+#define configUSE_STATS_FORMATTING_FUNCTIONS    0
 
 #define configKERNEL_INTERRUPT_PRIORITY     ( 255 ) /* All eight bits as QEMU doesn't model the priority bits. */
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
