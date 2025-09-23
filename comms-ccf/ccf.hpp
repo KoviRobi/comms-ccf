@@ -145,7 +145,7 @@ public:
                 continue;
             }
 
-            auto channel = span[0];
+            uint8_t channel = span[0];
             // TODO: Dispatch on channel
             (void)channel;
 
@@ -161,15 +161,19 @@ public:
                 continue;
             }
             // Remove channel + checksum
-            span = span.subspan(1, span.size() - 4 - 1);
+            span = span.subspan(
+                sizeof(channel),
+                span.size() - Fnv1a::size - sizeof(channel));
 
-            auto function = span[0];
-            span = span.subspan(1);
+            uint8_t function = span[0];
+            span = span.subspan(sizeof(function));
             // Reuse the pktBuf buffer for return (leaving space for
             // channel, function, and checksum)
             pktBuf[0] = channel;
             pktBuf[1] = function;
-            auto ret = std::span<uint8_t>(pktBuf + 2, sizeof(pktBuf) - 2 - 4);
+            auto ret = std::span<uint8_t>(
+                pktBuf + sizeof(channel) + sizeof(function),
+                sizeof(pktBuf) - sizeof(channel) - sizeof(function) - Fnv1a::size);
             if (!rpc.call(function, span, ret))
             {
                 // TODO: Just using checksumless zero-length packets to
@@ -255,8 +259,8 @@ public:
         va_list args;
         va_start(args, fmt);
         int written = vsnprintf(
-            reinterpret_cast<char *>(span.data()) + 1,
-            span.size() - 1,
+            reinterpret_cast<char *>(span.data()) + sizeof(initialByte),
+            span.size() - sizeof(initialByte),
             fmt,
             args
         );
