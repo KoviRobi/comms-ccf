@@ -26,15 +26,22 @@ in properly:
 
 1. [ ] Python layer could use IPython for a more friendly REPL.
 2. [ ] RPC
-    1. [ ] The Python type hints only do simple types, doing nested
+    1. [X] The Python type hints only do simple types, doing nested
     types such as tuples is not yet done.
     2. [ ] More complicated RPC is not done (e.g. asynchronous functions,
-    functions returning data over several packets).
+    functions returning data over several packets, void returns).
     3. [ ] Storing values (e.g. objects) across function calls is not
     done -- probably not necessary though.
     4. [ ] Proper error values for issues with the RPC.
-3. [ ] Other protocols such as logging or streaming sensor results not
-yet demonstrated.
+3. [ ] Other protocols such as ~logging~ or streaming sensor results
+not yet demonstrated.
+   1. [X] Basic logging done.
+   2. [ ] Deferred format logging to avoid pulling in printf (and compare
+   space difference).
+   3. [ ] Only sending pointers to rodata string constants.
+   4. Streaming events to plot, e.g. ADC readings (though maybe random
+   data for qemu).
+   5. Streaming trace events.
 4. [ ] CBOR
    1. [ ] The API needs improving to be able to avoid doing all the
    decoding on the stack as a return value. For example, read/write
