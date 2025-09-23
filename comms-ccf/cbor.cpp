@@ -181,7 +181,7 @@ bool Cbor::encode<unsigned char>(Major major, unsigned char value, std::span<uin
 template<>
 bool Cbor::encode<unsigned short>(Major major, unsigned short value, std::span<uint8_t> & buf)
 {
-    return value > USHRT_MAX
+    return value > UCHAR_MAX
         ? pack<unsigned short>(major, value, buf)
         : encode<unsigned char>(major, static_cast<unsigned char>(value), buf);
 }
@@ -189,9 +189,9 @@ bool Cbor::encode<unsigned short>(Major major, unsigned short value, std::span<u
 template<>
 bool Cbor::encode<unsigned int>(Major major, unsigned int value, std::span<uint8_t> & buf)
 {
-    return value > UINT16_MAX
+    return value > USHRT_MAX
         ? pack<unsigned int>(major, value, buf)
-        : encode<uint16_t>(major, static_cast<uint16_t>(value), buf);
+        : encode<unsigned short>(major, static_cast<unsigned short>(value), buf);
 }
 
 template<>

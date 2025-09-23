@@ -1,3 +1,28 @@
+/**
+
+This code parses the markdown table in comms-ccf/cbor.hpp, which has the following format
+
+    *Marker for test/cbor.cpp*
+
+    | Decoded | Encoded (initial byte, hexdump) | Type     |
+    |---------|---------------------------------|----------|
+    | 0       | `0:0`  ``                       | uint64_t |
+    | 23      | `0:23` ``                       | uint64_t |
+    | 24      | `0:24` `18`                     | uint64_t |
+    | 100     | `0:24` `64`                     | uint64_t |
+    | 1000    | `0:25` `03E8`                   | uint64_t |
+    | 1000000 | `0:26` `000F4240`               | uint64_t |
+
+To do this, it first finds the marker, then parses each row, extracts
+the values and type, and for the types implemented it check encode/decode
+behaves as expected.
+
+There are a few parts to this code:
+- Extended equals: normally NaN != NaN
+- Parsing the encoded/decoded into values
+- Dispatching on the type column
+
+*/
 #include "cbor.hpp"
 
 #include <stdint.h>
@@ -15,6 +40,10 @@
 #include <string_view>
 
 using namespace std::literals;
+
+constexpr std::string_view RED = "\x1b[31m";
+constexpr std::string_view YELLOW = "\x1b[33m";
+constexpr std::string_view RESET = "\x1b[0m";
 
 /// Equality also having NaN==NaN
 template<typename T>
@@ -80,6 +109,8 @@ static bool parse_bytes(std::string s, std::vector<uint8_t> & into)
 
 int main(int argc, char ** argv)
 {
+    bool ok = true;
+
     const char * path = "comms-ccf/cbor.hpp";
     if (argc == 2)
     {
@@ -113,52 +144,57 @@ int main(int argc, char ** argv)
             {
                 break;
             }
-            std::cout << "Error in line " << line << "\n";
+            std::cout << YELLOW << "Error in line " << line << RESET << "\n";
+            ok = false;
         }
         auto major = parse<uint8_t>(m[MajorNum]);
         auto minor = parse<uint8_t>(m[MinorNum]);
         if (!major || !minor)
         {
-            std::cout << "Failed to parse initial byte "
+            std::cout << YELLOW << "Failed to parse initial byte "
                       << m[MajorNum] << ":" << m[MinorNum]
-                      << " in " << line << "\n";
+                      << " in " << line << RESET << "\n";
+            ok = false;
             continue;
         }
         std::vector<uint8_t> bytes;
         bytes.push_back( (*major<<5) | *minor );
         if (!parse_bytes(m[Bytes], bytes))
         {
-            std::cout << "Failed to parse bytes "
-                      << m[Bytes] << " in " << line << "\n";
+            std::cout << YELLOW << "Failed to parse bytes "
+                      << m[Bytes] << " in " << line << RESET << "\n";
+            ok = false;
             continue;
         }
         std::span encoded{bytes};
 
         // Dispatch the test on each type
-#define DISPATCH(TYPE)                                                        \
-        if (m[Type] == #TYPE)                                                 \
-        {                                                                     \
-            std::optional<TYPE> expected = parse<TYPE>(m[Decoded]);           \
-            std::optional<TYPE> decoded = Cbor::Cbor<TYPE>::decode(encoded);  \
-            if (!decoded || !expected || !eq(*decoded, *expected))            \
-            {                                                                 \
-                std::cerr << "Failed to decode " << m[Encoded] << "\tinto\t"  \
-                          << *expected << "\tgot\t" << *decoded << "\n";      \
-                continue;                                                     \
-            }                                                                 \
-            std::vector<uint8_t> buf(bytes.size(), 0);                        \
-            std::span encoded{buf};                                           \
-            auto ok = Cbor::Cbor<TYPE>::encode(*expected, encoded);           \
-            if (!ok || !std::ranges::equal(bytes, buf))                       \
-            {                                                                 \
-                std::cerr << "Failed to encode " << m[Decoded] << "\tinto\t"; \
-                for (auto c : bytes)                                          \
-                    fprintf(stderr, "%02X", c);                               \
-                fprintf(stderr, "\tgot\t");                                   \
-                for (auto s = &*buf.begin(); s != &*encoded.begin(); ++s)     \
-                    fprintf(stderr, "%02X", *s);                              \
-                std::cerr << "\n";                                            \
-            }                                                                 \
+#define DISPATCH(TYPE)                                                               \
+        if (m[Type] == #TYPE)                                                        \
+        {                                                                            \
+            std::optional<TYPE> expected = parse<TYPE>(m[Decoded]);                  \
+            std::optional<TYPE> decoded = Cbor::Cbor<TYPE>::decode(encoded);         \
+            if (!decoded || !expected || !eq(*decoded, *expected))                   \
+            {                                                                        \
+                std::cerr << RED << "Failed to decode " << m[Encoded] << "\tinto\t"  \
+                          << *expected << "\tgot\t" << *decoded << RESET << "\n";    \
+                ok = false;                                                          \
+                continue;                                                            \
+            }                                                                        \
+            std::vector<uint8_t> buf(bytes.size(), 0);                               \
+            std::span encoded{buf};                                                  \
+            auto encOk = Cbor::Cbor<TYPE>::encode(*expected, encoded);               \
+            if (!encOk || !std::ranges::equal(bytes, buf))                           \
+            {                                                                        \
+                std::cerr << RED << "Failed to encode " << m[Decoded] << "\tinto\t"; \
+                for (auto c : bytes)                                                 \
+                    fprintf(stderr, "%02X", c);                                      \
+                fprintf(stderr, "\tgot\t");                                          \
+                for (auto s = &*buf.begin(); s != &*encoded.begin(); ++s)            \
+                    fprintf(stderr, "%02X", *s);                                     \
+                std::cerr << RESET << "\n";                                          \
+                ok = false;                                                          \
+            }                                                                        \
         }
         DISPATCH(uint64_t)
         else DISPATCH(int64_t)
@@ -170,7 +206,10 @@ int main(int argc, char ** argv)
         else DISPATCH(double)
         else if (m[Type] != "N/A" && m[Type].str().substr(0, 4) != "Skip")
         {
-            std::cout << m[Type] << " | " << m[Decoded] << " | " << m[Encoded] << " |\n";
+            std::cout << YELLOW << "Don't know how to test "
+                      << "| " << m[Type] << " | " << m[Decoded] << " | " << m[Encoded] << " |"
+                      << RESET << "\n";
         }
     }
+    return ok ? 0 : 1;
 }
