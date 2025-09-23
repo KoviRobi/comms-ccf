@@ -57,34 +57,46 @@ bool eq(T a, T b) requires (!requires(T t) { std::isnan(t); })
     return a == b;
 }
 
+template<typename T>
+struct Parse { static std::optional<T> parse(std::string s); };
+
 /// Parse an integral number, returning nullopt on failure.
 template<typename I> requires std::integral<I> && (!std::same_as<I, bool>)
-static std::optional<I> parse(std::string s, int base = 10)
+struct Parse<I>
 {
-    I integral;
-    auto res = std::from_chars(&*s.cbegin(), &*s.cend(), integral, base);
-    return (res.ec == std::errc{}) ? std::optional<I>{integral} : std::nullopt;
-}
+    static std::optional<I> parse(std::string s, int base = 10)
+    {
+        I integral;
+        auto res = std::from_chars(&*s.cbegin(), &*s.cend(), integral, base);
+        return (res.ec == std::errc{}) ? std::optional<I>{integral} : std::nullopt;
+    }
+};
 
 /// Parse a floating point number, returning nullopt on failure.
 template<typename F> requires std::floating_point<F>
 #if defined(CBOR_HALF_SUPPORT)
     || std::same_as<F, _Float16>
 #endif
-static std::optional<F> parse(std::string s)
+struct Parse<F>
 {
-    F fp;
-    auto res = std::from_chars(&*s.cbegin(), &*s.cend(), fp);
-    return (res.ec == std::errc{}) ? std::optional{fp} : std::nullopt;
-}
+    static std::optional<F> parse(std::string s)
+    {
+        F fp;
+        auto res = std::from_chars(&*s.cbegin(), &*s.cend(), fp);
+        return (res.ec == std::errc{}) ? std::optional{fp} : std::nullopt;
+    }
+};
 
 /// Parse a boolean, returning nullopt on failure.
 template<typename B> requires std::same_as<B, bool>
-static std::optional<bool> parse(std::string s)
+struct Parse<B>
 {
-    return s == "true" ? std::optional{true} :
-           s == "false" ? std::optional{false} : std::nullopt;
-}
+    static std::optional<bool> parse(std::string s)
+    {
+        return s == "true" ? std::optional{true} :
+               s == "false" ? std::optional{false} : std::nullopt;
+    }
+};
 
 /// Parse a sequence of bytes, with optional space padding
 static bool parse_bytes(std::string s, std::vector<uint8_t> & into)
@@ -95,7 +107,7 @@ static bool parse_bytes(std::string s, std::vector<uint8_t> & into)
     for (; it != last; ++it)
     {
         if (it->size() != 2) break;
-        auto b = parse<uint8_t>((*it)[1], 16);
+        auto b = Parse<uint8_t>::parse((*it)[1], 16);
         if (!b) break;
         into.push_back(*b);
     }
@@ -147,8 +159,8 @@ int main(int argc, char ** argv)
             std::cout << YELLOW << "Error in line " << line << RESET << "\n";
             ok = false;
         }
-        auto major = parse<uint8_t>(m[MajorNum]);
-        auto minor = parse<uint8_t>(m[MinorNum]);
+        auto major = Parse<uint8_t>::parse(m[MajorNum]);
+        auto minor = Parse<uint8_t>::parse(m[MinorNum]);
         if (!major || !minor)
         {
             std::cout << YELLOW << "Failed to parse initial byte "
@@ -172,7 +184,7 @@ int main(int argc, char ** argv)
 #define DISPATCH(TYPE)                                                               \
         if (m[Type] == #TYPE)                                                        \
         {                                                                            \
-            std::optional<TYPE> expected = parse<TYPE>(m[Decoded]);                  \
+            std::optional<TYPE> expected = Parse<TYPE>::parse(m[Decoded]);           \
             std::optional<TYPE> decoded = Cbor::Cbor<TYPE>::decode(encoded);         \
             if (!decoded || !expected || !eq(*decoded, *expected))                   \
             {                                                                        \
