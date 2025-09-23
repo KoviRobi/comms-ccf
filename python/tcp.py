@@ -24,7 +24,12 @@ async def amain():
     parser.add_argument("--host", default="localhost", help="Host to connect to")
     parser.add_argument("--port", default=4321, type=int, help="Port to connect to")
     parser.add_argument("--verbose", "-v", action="store_true", help="Dump packets")
-    parser.add_argument("--no-repl", "-n", action="store_true", help="Only try example")
+    parser.add_argument(
+        "--no-repl", "-n", dest="repl", action="store_false", help="Only try example"
+    )
+    parser.add_argument(
+        "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
+    )
     args = parser.parse_args()
 
     global rx, tx, transport, rpc
@@ -37,7 +42,8 @@ async def amain():
     background_tasks.add(channels.loop)
     rpc = Rpc(channels)
 
-    background_tasks.add(print_logs, channels)
+    if args.log:
+        background_tasks.add(print_logs, channels)
 
     while True:
         try:
@@ -58,7 +64,8 @@ async def amain():
     except Exception as e:
         print(e)
 
-    await repl(Stdio(), locals)
+    if args.repl:
+        await repl(Stdio(), locals)
 
 
 def quit(*args, **kwargs):

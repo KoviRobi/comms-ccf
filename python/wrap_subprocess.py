@@ -11,6 +11,7 @@ from shutil import which
 
 from background import BackgroundTasks
 from channel import Channels
+from log import print_logs
 from repl import repl
 from rpc import Rpc
 from transport import StreamTransport
@@ -23,7 +24,12 @@ async def amain():
         "arguments", type=str, nargs="*", help="Arguments to the executable"
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Dump packets")
-    parser.add_argument("--no-repl", "-n", action="store_true", help="Only try example")
+    parser.add_argument(
+        "--no-repl", "-n", dest="repl", action="store_false", help="Only try example"
+    )
+    parser.add_argument(
+        "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
+    )
     args = parser.parse_args()
 
     executable: Path = Path(which(args.executable))
@@ -44,6 +50,9 @@ async def amain():
     background_tasks.add(channels.loop)
     rpc = Rpc(channels)
 
+    if args.log:
+        background_tasks.add(print_logs, channels)
+
     while True:
         try:
             await rpc.discover()
@@ -62,7 +71,7 @@ async def amain():
     except Exception as e:
         print(e)
 
-    if not args.no_repl:
+    if args.repl:
         await repl(locals, locals)
 
     proc.terminate()
