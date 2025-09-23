@@ -1,3 +1,8 @@
+"""
+This receives packets from an async channel and decodes the COBS encoding,
+checks the checksum.
+"""
+
 import typing as t
 from asyncio import StreamReader, StreamWriter
 

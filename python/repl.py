@@ -1,3 +1,7 @@
+"""
+Simple REPL with history and tab completion (if readline is present)
+"""
+
 import asyncio
 import traceback
 from pathlib import Path

@@ -1,3 +1,16 @@
+"""
+# Channelizer
+
+This code splits up the incoming data into several channels, so that
+code on top of this can easily ignore messages not intended for it.
+
+The basic idea is to use a dictionary of futures to wait for, which are
+set when a value arrives on that channel.
+
+The channels only remember the latest message. An alternative could be
+using a queue instead of futures.
+"""
+
 from asyncio import Future, IncompleteReadError, get_event_loop, shield, wait_for
 from enum import IntEnum
 

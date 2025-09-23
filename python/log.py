@@ -1,3 +1,7 @@
+"""
+Simple background logging task
+"""
+
 from enum import Enum, auto
 
 from channel import Channels

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+An alternative to the TCP transport, it wraps the STDIO of a subprocess.
+
+TODO: De-duplicate along with tcp.py
+"""
+
 import asyncio
 import sys
 import time

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+Connects to a TCP Comms-CCF socket
+
+TODO: De-duplicate along with wrap_subprocess.py
+"""
+
 import asyncio
 import signal
 import sys

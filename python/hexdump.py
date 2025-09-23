@@ -1,3 +1,7 @@
+"""
+Simple hex-dump which is a mirror of the C++ hexdump in test/hexdump.hpp
+"""
+
 def hexdump(data: bytes, prefix="") -> str:
     ret = ""
     for line in range(0, len(data), 16):

@@ -1,3 +1,7 @@
+"""
+Keep track of background tasks so their exceptions can be read.
+"""
+
 from asyncio import EventLoop, Task
 
 

@@ -1,3 +1,8 @@
+"""
+Discover RPC functions and add the documentation/type hints from the
+schema.
+"""
+
 import pydoc
 import time
 import typing as t
