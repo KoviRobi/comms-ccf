@@ -3,18 +3,20 @@ This receives packets from an async channel and decodes the COBS encoding,
 checks the checksum.
 """
 
+import asyncio
+import time
 import typing as t
-from asyncio import StreamReader, StreamWriter
 
 from cobs.cobs import DecodeError, decode, encode
 from fnv_hash_fast import fnv1a_32
 from hexdump import hexdump
 
 # Float (seconds)
-DEFAULT_TIMEOUT = 0.2
+DEFAULT_TIMEOUT = 0.5
 
 # Channel index (1) + Checksum (4) + b"\0"
 MIN_PKT_SIZE = 6
+MAX_PKT_SIZE = 256
 
 
 class Transport(t.Protocol):
@@ -31,10 +33,11 @@ class Transport(t.Protocol):
 
 class StreamTransport:
     def __init__(
-        self, rx: StreamReader, tx: StreamWriter, log_fp: t.Optional[t.TextIO] = None
+        self, rx: asyncio.StreamReader, tx: asyncio.StreamWriter, log_fp: t.Optional[t.TextIO] = None
     ) -> None:
         self._tx = tx
         self._rx = rx
+        self._rxBuf = b""
         self._log = log_fp
 
     async def send(
@@ -45,16 +48,26 @@ class StreamTransport:
         data = encode(data) + b"\0"
         if self._log:
             print(hexdump(data, "TX: "), file=self._log)
-        self._tx.write(data)
-        await self._tx.drain()
+        async with asyncio.timeout(timeout):
+            self._tx.write(data)
+            await self._tx.drain()
 
     async def recv(self, *, timeout: float = DEFAULT_TIMEOUT) -> tuple[int, bytes]:
-        # TODO: timeouts, MAX_PKT_SIZE
-        data = await self._rx.readuntil(b"\0")
+        deadline = timeout + time.time()
+        while True:
+            async with asyncio.timeout(deadline - time.time()):
+                read = await self._rx.read(MAX_PKT_SIZE)
+                idx = read.find(0)
+                if idx > 0:
+                    data = self._rxBuf + read[:idx + 1]
+                    self._rxBuf = read[idx + 1:]
+                    break
+                else:
+                    self._rxBuf += read
+                    assert len(self._rxBuf) < MAX_PKT_SIZE, "Packet max size exceeded"
         if self._log:
             print(hexdump(data, "RX: "), file=self._log)
         assert len(data) >= MIN_PKT_SIZE, "Packet too small\n" + hexdump(data, "pkt> ")
-        assert data[-1] == 0, "Missing terminator\n" + hexdump(data, "pkt> ")
         try:
             decoded = decode(data[:-1])
         except DecodeError as e:

@@ -165,15 +165,17 @@ public:
                 sizeof(channel),
                 span.size() - Fnv1a::size - sizeof(channel));
 
-            uint8_t function = span[0];
-            span = span.subspan(sizeof(function));
+            uint8_t seqNo = span[0];
+            uint8_t function = span[1];
+            span = span.subspan(sizeof(seqNo) + sizeof(function));
             // Reuse the pktBuf buffer for return (leaving space for
             // channel, function, and checksum)
             pktBuf[0] = channel;
-            pktBuf[1] = function;
+            pktBuf[1] = seqNo;
+            pktBuf[2] = function;
+            auto header = sizeof(channel) + sizeof(seqNo) + sizeof(function);
             auto ret = std::span<uint8_t>(
-                pktBuf + sizeof(channel) + sizeof(function),
-                sizeof(pktBuf) - sizeof(channel) - sizeof(function) - Fnv1a::size);
+                pktBuf + header, sizeof(pktBuf) - header - Fnv1a::size);
             if (!rpc.call(function, span, ret))
             {
                 // TODO: Just using checksumless zero-length packets to

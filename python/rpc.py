@@ -7,32 +7,36 @@ import pydoc
 import time
 import typing as t
 from inspect import Parameter, signature
+from random import randint
 from textwrap import indent
 
 from cbor import dumps, loads
 from channel import Channel, Channels
-from transport import DEFAULT_TIMEOUT, Transport
+from transport import DEFAULT_TIMEOUT
 
 
 class Rpc:
-    def __init__(self, transport: Channels):
+    def __init__(self, transport: Channels, seqNo: int = randint(0, 0xFF)):
         self._transport = transport
         self._methods: dict[str, t.Callable[..., t.Any]] = {"schema": self.schema}
         self._doc = pydoc.TextDoc()
+        self._seqNo = seqNo
 
     async def __call__(self, n, args: t.Any, timeout=DEFAULT_TIMEOUT) -> t.Any:
         deadline = time.time() + timeout
-        data = int.to_bytes(n) + dumps(args)
+        seqNo = self._seqNo
+        self._seqNo = (self._seqNo + 1) & 0xFF
+        data = int.to_bytes(seqNo) + int.to_bytes(n) + dumps(args)
         await self._transport.send(Channel.RPC, data, timeout=timeout)
-        timeout = deadline - time.time()
-        if timeout > 0:
+        while True:
+            timeout = deadline - time.time()
             data = await self._transport.recv(Channel.RPC, timeout=timeout)
-            function = data[0]
-            data = data[1:]
+            if data[0] != seqNo:
+                continue
+            function = data[1]
+            data = data[2:]
             assert function == n, "Received response to a different function"
             return loads(data)
-        else:
-            raise TimeoutError("No data received over RPC in the given time")
 
     async def discover(self, timeout=DEFAULT_TIMEOUT):
         self._schema = await self(0, [], timeout=timeout)

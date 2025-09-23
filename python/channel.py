@@ -53,6 +53,8 @@ class Channels:
                     print("Dropping channel", name, "data", data)
                     print("future messages ignored on channel", name)
                     self._channels[chan] = None
+            except TimeoutError:
+                pass
             except IncompleteReadError:
                 break
             except Exception as e:
@@ -69,4 +71,6 @@ class Channels:
             fut = self._loop.create_future()
             self._channels[channel] = fut
         result = await wait_for(shield(fut), timeout=timeout)
+        fut = self._loop.create_future()
+        self._channels[channel] = fut
         return result
