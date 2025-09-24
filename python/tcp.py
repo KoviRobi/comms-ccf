@@ -56,7 +56,7 @@ async def amain():
             await rpc.discover()
             break
         except Exception as e:
-            print(e)
+            print("Failed to discover RPC:", str(e) or repr(e))
             time.sleep(0.2)
 
     locals = {k: v for k, v in rpc.methods().items()}
@@ -68,7 +68,7 @@ async def amain():
     try:
         print("E.g. add(2,3) ~>", await rpc.add(2, 3))
     except Exception as e:
-        print(e)
+        print("Exception in demo:", str(e) or repr(e))
 
     if args.repl:
         await repl(Stdio(), locals)

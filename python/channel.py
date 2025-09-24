@@ -58,7 +58,7 @@ class Channels:
             except IncompleteReadError:
                 break
             except Exception as e:
-                print("Exception", e)
+                print("Exception in channel", str(e) or repr(e))
 
     async def send(
         self, channel: int, data: bytes, *, timeout: float = DEFAULT_TIMEOUT
