@@ -148,6 +148,7 @@ HTML that doesn't matter):
 | 32("http://www.example.com")                                                                  | `6:24` `2076687474703A2F2F7777772E6578 616D706C652E636F6D`         | N/A                               |
 | h''                                                                                           | `2:0`  ``                                                          | std::span<uint8_t>                |
 | h'01020304'                                                                                   | `2:4`  `01020304`                                                  | std::span<uint8_t>                |
+| h'31323334'                                                                                   | `2:4`  `31323334`                                                  | std::span<uint8_t>                |
 | ""                                                                                            | `3:0`  ``                                                          | std::string_view                  |
 | "a"                                                                                           | `3:1`  `61`                                                        | std::string_view                  |
 | "IETF"                                                                                        | `3:4`  `49455446`                                                  | std::string_view                  |
@@ -189,6 +190,7 @@ HTML that doesn't matter):
 #include <stddef.h>
 #include <stdint.h>
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <concepts>
@@ -581,13 +583,12 @@ typedef _Float16 half;
             {
                 return false;
             }
-            for (const auto & item : span)
+            if (buf.size() < span.size())
             {
-                if (!Cbor<uint8_t>::encode(item, buf))
-                {
-                    return false;
-                }
+                return false;
             }
+            std::copy(span.cbegin(), span.cend(), buf.begin());
+            buf = buf.subspan(span.size());
             return true;
         }
         static std::optional<std::span<uint8_t, Size>> decode(std::span<uint8_t> & buf)
