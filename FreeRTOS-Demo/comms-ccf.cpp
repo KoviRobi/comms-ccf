@@ -47,9 +47,8 @@ static Rpc rpc{
         return std::span(reinterpret_cast<uint8_t *>(addr), size);
     }),
     Call("write_mem", "write memory", {"addr", "data"},
-        +[](uintptr_t addr, std::span<uint8_t> data) -> std::tuple<> {
+        +[](uintptr_t addr, std::span<uint8_t> data) {
             std::ranges::copy(data, reinterpret_cast<uint8_t *>(addr));
-            return {};
         }
     ),
 

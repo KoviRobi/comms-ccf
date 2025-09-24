@@ -300,6 +300,40 @@ typedef _Float16 half;
         Unassigned1Last = 255,
     };
 
+    struct Undefined{};
+
+    /// Allows materialising void values using a placeholder
+    template<typename T, typename Placeholder>
+    struct WrapVoid{};;
+
+    template<typename Placeholder>
+    struct WrapVoid<void, Placeholder>
+    {
+        using T = Placeholder;
+        T value;
+        template<typename Fn, typename Tuple>
+        WrapVoid(Fn && fn, Tuple && args)
+        {
+            std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args));
+        }
+    };
+
+    template<typename U, typename Placeholder> requires (!std::same_as<U, void>)
+    struct WrapVoid<U, Placeholder>
+    {
+        using T = U;
+        T value;
+        template<typename Fn, typename Tuple>
+        WrapVoid(Fn && fn, Tuple && args)
+            : value(std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args)))
+        {
+        }
+    };
+
+    template<typename T, typename Placeholder>
+    using WrapVoidT = WrapVoid<T, Placeholder>::T;
+
+
     /// Pack a value [0, 23] embedded into the first header byte.
     bool packEmbedded(Major major, uint8_t value, std::span<uint8_t> & buf);
     /// Pack an N bit value (usually if the value is [0, 23] you
@@ -484,6 +518,29 @@ typedef _Float16 half;
             return obj != nullptr
                 ? Cbor<T>::encode(*obj, buf)
                 : packEmbedded(Major::Simple, static_cast<uint8_t>(SimpleValues::Null), buf);
+        }
+    };
+
+    template<>
+    struct Cbor<void>
+    {
+        static bool encode(Undefined, std::span<uint8_t> & buf)
+        {
+            return packEmbedded(
+                Major::Simple,
+                static_cast<uint8_t>(SimpleValues::Undefined), buf);
+        }
+
+        static std::optional<Undefined> decode(std::span<uint8_t> & buf)
+        {
+            auto value = unpack(buf);
+            if (value.has_value() &&
+                value->major == Major::Simple &&
+                value->minor == static_cast<Minor>(SimpleValues::Undefined))
+            {
+                return {Undefined{}};
+            }
+            return {};
         }
     };
 

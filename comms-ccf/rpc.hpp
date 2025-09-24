@@ -128,9 +128,8 @@ public:
         if (argsTup)
         {
             debugf(DEBUG "function is %p" END LOGLEVEL_ARGS, ptr);
-            Ret retVal = std::apply(ptr, *argsTup);
-            debugf(DEBUG "call returned" END LOGLEVEL_ARGS);
-            return Cbor::Cbor<Ret>::encode(retVal, ret);
+            auto retVal = Cbor::WrapVoid<Ret, Cbor::Undefined>{ptr, *argsTup};
+            return Cbor::Cbor<Ret>::encode(retVal.value, ret);
         }
         return false;
     }
