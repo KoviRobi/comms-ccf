@@ -20,6 +20,7 @@ from channel import Channels
 from log import print_logs
 from repl import repl
 from rpc import Rpc
+from tcp import Stdio
 from transport import StreamTransport
 
 
@@ -78,7 +79,7 @@ async def amain():
         print("Exception in demo:", str(e) or repr(e))
 
     if args.repl:
-        await repl(locals, locals)
+        await repl(Stdio(), locals)
 
     proc.terminate()
 
