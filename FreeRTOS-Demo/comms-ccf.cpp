@@ -30,12 +30,6 @@ static TaskHandle_t rxTask;
 /// send a character, or the callback hasn't arrived yet.
 static std::atomic_bool txBusy;
 
-static const auto version = std::to_array<std::string_view>({
-    "main"sv,
-    "a/b/c"sv,
-    "g1234567"sv
-});
-
 /// Add RPC definitions here.
 static Rpc rpc{
     /// Note: using `+` to convert lambda to a function pointer
