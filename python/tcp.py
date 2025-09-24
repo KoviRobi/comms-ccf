@@ -14,6 +14,7 @@ from argparse import ArgumentParser
 
 from background import BackgroundTasks
 from channel import Channels
+from hexdump import hexdump
 from log import print_logs
 from repl import repl
 from rpc import Rpc
@@ -61,6 +62,7 @@ async def amain():
 
     locals = {k: v for k, v in rpc.methods().items()}
     locals["help"] = rpc.help
+    locals["hexdump"] = hexdump
     locals["dir"] = dir
 
     print("Use help(name=None) for discovered methods")
