@@ -262,6 +262,7 @@ void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
 }
 /*-----------------------------------------------------------*/
 
+#include <stdlib.h>
 #include <sys/unistd.h>
 
 _ssize_t _write (int fd, const void * p, size_t len)
@@ -273,3 +274,11 @@ _ssize_t _write (int fd, const void * p, size_t len)
     }
     return len;
 }
+
+void _close()  { abort(); }
+void _fstat()  { abort(); }
+void _getpid() { abort(); }
+void _isatty() { abort(); }
+void _kill()   { abort(); }
+void _lseek()  { abort(); }
+void _read()   { abort(); }
