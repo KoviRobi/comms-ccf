@@ -149,7 +149,7 @@ public:
       calls{
           [&]<size_t... Idx>(std::index_sequence<Idx...>)
           {
-              return std::array{
+              return std::array<std::reference_wrapper<AbstractCall>, sizeof...(Calls)>{
                   (std::reference_wrapper<AbstractCall>{
                   *static_cast<AbstractCall *>(&std::get<Idx>(tuple))})...
               };
