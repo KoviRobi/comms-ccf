@@ -24,6 +24,8 @@
             pkgs.python3.pkgs.cobs
             pkgs.python3.pkgs.cbor
             pkgs.python3.pkgs.fnv-hash-fast
+            pkgs.python3.pkgs.squarify
+            pkgs.python3.pkgs.intervaltree
           ]
           ++ pkgs.lib.optionals demo [
             # FreeRTOSDemo
