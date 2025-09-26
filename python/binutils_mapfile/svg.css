@@ -1,0 +1,7 @@
+.group:has(:target) > a.obscures {
+    display: none;
+}
+
+* {
+    caret-color: transparent; /* for caret browsing */
+}
