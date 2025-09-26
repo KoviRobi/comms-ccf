@@ -26,6 +26,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 set(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m3 -mthumb")
 set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} --specs=nano.specs --specs=nosys.specs")
+set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -ffunction-sections -fdata-sections")
 
 foreach(compiler IN ITEMS CXX C ASM)
     set(CMAKE_${compiler}_FLAGS_DEBUG " -Og -gdwarf-2 -g3" CACHE STRING
@@ -40,10 +41,10 @@ set(CMAKE_ASM_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -x assembler-with-cpp")
 set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-rtti -fno-exceptions -fno-use-cxa-atexit")
 
 set(CMAKE_ASM_LINK_FLAGS "-T ${CMAKE_CURRENT_LIST_DIR}/standalone.ld -nostartfiles")
-set(CMAKE_ASM_LINK_FLAGS "${CMAKE_ASM_LINK_FLAGS} -Wl,-Map=${CMAKE_PROJECT_NAME}.map")
+set(CMAKE_ASM_LINK_FLAGS "${CMAKE_ASM_LINK_FLAGS} -Wl,-Map=%")
 set(CMAKE_ASM_LINK_FLAGS "${CMAKE_ASM_LINK_FLAGS} -Wl,--print-memory-usage")
 
 set(CMAKE_C_LINK_FLAGS "${CMAKE_ASM_LINK_FLAGS} -Wl,--start-group -lc -lm -Wl,--end-group")
-set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -ffunction-sections -fdata-sections -Wl,--gc-sections")
+set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--gc-sections")
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--start-group -lstdc++ -lsupc++ -Wl,--end-group")
