@@ -59,6 +59,7 @@
 #include "interrupt.h"
 
 #include "comms-ccf.hpp"
+#include "log.hpp"
 
 /*-----------------------------------------------------------*/
 
@@ -125,9 +126,13 @@ int main( void )
     prvSetupHardware();
 
     /* Start the standard demo tasks. */
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 0
     commsCcfStartTasks();
-    void createLogTask();
+#endif
+
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 6
     createLogTask();
+#endif
 
     /* Uncomment the following line to configure the high frequency interrupt
      * used to measure the interrupt jitter time.

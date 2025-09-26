@@ -29,7 +29,7 @@ def main():
         if args.svg:
             random = Random(1234)
 
-            def palette(_):
+            def palette(_) -> str:
                 return f"#{random.randint(0, ((1 << 24) - 1)):06X}"
 
             with args.svg.open("wt") as file:

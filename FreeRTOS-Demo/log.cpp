@@ -1,6 +1,8 @@
-#include <ccf.hpp>
+#include "log.hpp"
 
 #include "comms-ccf.hpp"
+
+#include <ccf.hpp>
 
 #include "hw_types.h"
 #include "hw_memmap.h"
@@ -26,7 +28,6 @@ static void logTask(void *)
     }
 }
 
-extern "C"
 void createLogTask()
 {
     xTaskCreateStatic(

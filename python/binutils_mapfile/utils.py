@@ -45,10 +45,6 @@ def ellipsise_templates(symbol: str):
 
     Assumes parenthesised templates containing expressions,
     e.g. `Foo<(1 < 2)>`
-
-    Note, result will replace template "angle brackets" (less
-    than or greater than symbols) with Unicode mathematical angle
-    brackets ⟨/⟩.
     """
     innermost_angle_expr = re.compile(r"(.*)<\(.*?\)>(.*)")
     while m := innermost_angle_expr.match(symbol):

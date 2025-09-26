@@ -56,3 +56,32 @@ add_custom_target(run
     COMMENT "You can now attach GDB to localhost:1234"
     USES_TERMINAL
 )
+
+# For comparing sizes
+foreach(CCF_FEATURES RANGE 7)
+    set(TARGET "FreeRTOS-Demo-${CCF_FEATURES}")
+    add_executable("${TARGET}" EXCLUDE_FROM_ALL
+        "$<TARGET_PROPERTY:FreeRTOS-Demo,SOURCES>"
+    )
+     add_custom_command(TARGET "${TARGET}"
+        POST_BUILD
+        COMMAND python
+            "${CMAKE_CURRENT_LIST_DIR}/../python/binutils_mapfile"
+            "$<TARGET_FILE:${TARGET}>.map"
+            --yaml "$<TARGET_FILE:${TARGET}>.map.yaml"
+        COMMAND python
+            "${CMAKE_CURRENT_LIST_DIR}/../python/binutils_mapfile"
+            "$<TARGET_FILE:${TARGET}>.map"
+            --svg "$<TARGET_FILE:${TARGET}>.map.svg"
+        VERBATIM
+        COMMAND_EXPAND_LISTS
+    )
+    set_target_properties("${TARGET}" PROPERTIES
+        INCLUDE_DIRECTORIES "$<TARGET_PROPERTY:FreeRTOS-Demo,INCLUDE_DIRECTORIES>"
+        LINK_LIBRARIES "$<TARGET_PROPERTY:FreeRTOS-Demo,LINK_LIBRARIES>"
+    )
+    target_compile_definitions("${TARGET}" PRIVATE
+        "CCF_FEATURES=${CCF_FEATURES}")
+    list(APPEND DEMO_MEASURE "${TARGET}")
+endforeach()
+add_custom_target(FreeRTOS-Demo-measure DEPENDS ${DEMO_MEASURE})

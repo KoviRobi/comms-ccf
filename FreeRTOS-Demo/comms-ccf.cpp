@@ -32,6 +32,7 @@ static std::atomic_bool txBusy;
 
 /// Add RPC definitions here.
 static Rpc rpc{
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 1
     /// Note: using `+` to convert lambda to a function pointer
     Call("version", "software version", {}, +[]() {
         return std::tuple{
@@ -40,9 +41,21 @@ static Rpc rpc{
             /*git hash*/0x1234567llu
         };
     }),
+#endif // CCF_FEATURES > 1
+
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 2
     Call("add", "return x+y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x + y; }),
+#endif // CCF_FEATURES > 2
+
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 3
     Call("sub", "return x-y", {"x", "y"}, +[](uint32_t x, uint32_t y) { return x - y; }),
+#endif // CCF_FEATURES > 3
+
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 4
     Call("hello", "greet", {}, +[]() { return "Hello world"sv; }),
+#endif // CCF_FEATURES > 4
+
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 5
     Call("read_mem", "read memory", {"addr", "size"}, +[](uintptr_t addr, size_t size) {
         return std::span(reinterpret_cast<uint8_t *>(addr), size);
     }),
@@ -51,7 +64,7 @@ static Rpc rpc{
             std::ranges::copy(data, reinterpret_cast<uint8_t *>(addr));
         }
     ),
-
+#endif // CCF_FEATURES > 5
 };
 
 /// Called by the UART interrupt handler when it receives a character.
@@ -145,6 +158,7 @@ void commsCcfProcessTask(void *)
 /// Start the task responsible for receiving and responding to RPC calls.
 void commsCcfStartTasks(void)
 {
+#if !defined(CCF_FEATURES) || CCF_FEATURES > 0
     rxTask = xTaskCreateStatic(
         commsCcfProcessTask,
         "CommsCcf",
@@ -153,4 +167,5 @@ void commsCcfStartTasks(void)
         tskIDLE_PRIORITY, // Priority
         commsCcfStack,
         &commsCcfTcb);
+#endif
 }

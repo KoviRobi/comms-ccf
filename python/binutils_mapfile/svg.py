@@ -52,7 +52,7 @@ def svg(
         area_name = area.name.strip('"')
         area_short = utils.ellipsise_templates(area_name)
         area_colour = palette(area)
-        area_id = f"area-{area.name}-{area.origin}"
+        area_id = f"area-{area.name}-{area.origin:08X}"
         sorted_outputs = list(sorted(output_sections, key=lambda s: s.size))
         output_sizes = [section.size for section in sorted_outputs if section.size > 0]
         area_used = sum(output_sizes)
@@ -96,7 +96,7 @@ def svg(
                 output_desc += f"\nfill: {output_section.fill:08}"
 
             output_colour = palette(output_section)
-            output_id = f"{area_id}-output-{output_name}-{output_section.address}"
+            output_id = f"{area_id}-output-{output_name}-{output_section.address:08X}"
             indent(
                 f'<g id="{utils.xmlescape(output_id)}_group" class="output group" transform="'
                 f'translate({output_rect["x"]} {output_rect["y"]})',
@@ -146,7 +146,7 @@ def svg(
                     input_desc += f"\n{sym.name} 0x{sym.address:X} {sym.wildcard}"
 
                 input_colour = palette(input_section)
-                input_id = f"{output_id}-input-{input_name}-{input_section.address}"
+                input_id = f"{output_id}-input-{input_name}-{input_section.address:08X}"
                 indent(
                     f'<g id="{utils.xmlescape(input_id)}_group" class="input group" transform="'
                     f'translate({input_rect["x"]} {input_rect["y"]})',
