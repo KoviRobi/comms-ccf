@@ -22,7 +22,7 @@ class Rpc:
         self._doc = pydoc.TextDoc()
         self._seqNo = seqNo
 
-    async def __call__(self, n, args: t.Any, timeout=DEFAULT_TIMEOUT) -> t.Any:
+    async def __call__(self, n: int, args: t.Any, timeout: float = DEFAULT_TIMEOUT) -> t.Any:
         deadline = time.time() + timeout
         seqNo = self._seqNo
         self._seqNo = (self._seqNo + 1) & 0xFF
@@ -38,7 +38,7 @@ class Rpc:
             assert function == n, "Received response to a different function"
             return loads(data)
 
-    async def discover(self, timeout=DEFAULT_TIMEOUT):
+    async def discover(self, timeout: float = DEFAULT_TIMEOUT):
         self._schema = await self(0, [], timeout=timeout)
         print("Schema", self._schema)
         assert isinstance(self._schema, list), "Bad schema"
