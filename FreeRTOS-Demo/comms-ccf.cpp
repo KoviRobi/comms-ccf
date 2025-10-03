@@ -31,7 +31,7 @@ static TaskHandle_t rxTask;
 static std::atomic_bool txBusy;
 
 /// Add RPC definitions here.
-static Rpc rpc{
+static const Rpc rpc{
 #if !defined(CCF_FEATURES) || CCF_FEATURES > 1
     /// Note: using `+` to convert lambda to a function pointer
     Call("version", "software version", {}, +[]() {
