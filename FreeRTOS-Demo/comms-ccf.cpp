@@ -123,6 +123,13 @@ void commsCcfProcessTask(void *)
 {
     while (1)
     {
+        // Safety: Called from a single thread
+        // Poll first in case we skipped a notification on init
+        if (ccf.unsafeGetUnderlying().poll(rpc))
+        {
+            // Kick TX
+            commsCcfTxAvailable();
+        }
         // Waiting for an RPC call to arrive -- woken by commsCcfNotify
         // above.
         TickType_t timeout = pdMS_TO_TICKS(1000);
@@ -131,12 +138,6 @@ void commsCcfProcessTask(void *)
             // Timeout
             // Maybe do some action e.g. ticke watchdog
             continue;
-        }
-        // Safety: Called from a single thread
-        if (ccf.unsafeGetUnderlying().poll(rpc))
-        {
-            // Kick TX
-            commsCcfTxAvailable();
         }
     }
 }
