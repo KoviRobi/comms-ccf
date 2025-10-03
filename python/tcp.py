@@ -40,7 +40,6 @@ async def amain():
     loop = asyncio.get_event_loop()
     background_tasks = BackgroundTasks(loop)
     channels = Channels(transport, loop)
-    channels.open_channel(0)
     background_tasks.add(channels.loop)
     rpc = Rpc(channels)
 

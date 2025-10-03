@@ -4,7 +4,7 @@ Simple background logging task
 
 from enum import Enum, auto
 
-from channel import Channels
+from channel import Channels, Channel
 
 from cobs.cobs import DecodeError
 
@@ -15,10 +15,10 @@ class LogLevel(Enum):
     Error = auto()
 
 async def print_logs(channels: Channels):
-    channels.open_channel(1)
+    channels.open_channel(Channel.Log)
     while True:
         try:
-            data = await channels.recv(1)
+            data = await channels.recv(Channel.Log)
             if len(data) < 2:
                 continue
             level = data[0] >> 5

@@ -16,8 +16,8 @@ from transport import DEFAULT_TIMEOUT
 
 
 class Rpc:
-    def __init__(self, transport: Channels, seqNo: int = randint(0, 0xFF)):
-        self._transport = transport
+    def __init__(self, channels: Channels, seqNo: int = randint(0, 0xFF)):
+        self._channels = channels
         self._methods: dict[str, t.Callable[..., t.Any]] = {"schema": self.schema}
         self._doc = pydoc.TextDoc()
         self._seqNo = seqNo
@@ -27,10 +27,10 @@ class Rpc:
         seqNo = self._seqNo
         self._seqNo = (self._seqNo + 1) & 0xFF
         data = int.to_bytes(seqNo) + int.to_bytes(n) + dumps(args)
-        await self._transport.send(Channel.RPC, data, timeout=timeout)
+        await self._channels.send(Channel.RPC, data, timeout=timeout)
         while True:
             timeout = deadline - time.time()
-            data = await self._transport.recv(Channel.RPC, timeout=timeout)
+            data = await self._channels.recv(Channel.RPC, timeout=timeout)
             if data[0] != seqNo:
                 continue
             function = data[1]
@@ -39,6 +39,7 @@ class Rpc:
             return loads(data)
 
     async def discover(self, timeout: float = DEFAULT_TIMEOUT):
+        self._channels.open_channel(Channel.RPC)
         self._schema = await self(0, [], timeout=timeout)
         print("Schema", self._schema)
         assert isinstance(self._schema, list), "Bad schema"
