@@ -75,7 +75,7 @@ void commsCcfRx(uint8_t byte)
 /// Try and send the next character
 void commsCcfTxNext()
 {
-    static std::optional<decltype(ccf)::Underlying::TxNotification> toTx{};
+    static std::optional<decltype(ccf)::Underlying::TxFrame> toTx{};
 
     if (!toTx)
     {

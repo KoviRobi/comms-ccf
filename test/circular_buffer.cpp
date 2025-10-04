@@ -16,12 +16,12 @@ using u8s = std::initializer_list<uint8_t>;
 constexpr size_t MAX_PKT_SIZE = 4;
 constexpr size_t BUF_SIZE = 8;
 CircularBuffer<uint8_t, BUF_SIZE, MAX_PKT_SIZE> buf;
-std::optional<decltype(buf)::Notification> notification;
+std::optional<decltype(buf)::Frame> frame;
 std::back_insert_iterator ins{buf};
 
 static bool test_insert_more_than_max_pkt_size()
 {
-    notification.reset();
+    frame.reset();
     buf.reset();
 
     assert(buf.empty());
@@ -36,7 +36,7 @@ static bool test_insert_more_than_max_pkt_size()
 
 static bool test_fill_queue_max_pkt_size()
 {
-    notification.reset();
+    frame.reset();
     buf.reset();
 
     assert(buf.empty());
@@ -53,7 +53,7 @@ static bool test_fill_queue_max_pkt_size()
     buf.notify();
 
     assert(buf.full());
-    assert(buf.get_notification(notification));
+    assert(buf.get_frame(frame));
     assert(!buf.dropping());
     std::ranges::copy(u8s{7}, ins);
     assert(buf.dropping());
@@ -62,7 +62,7 @@ static bool test_fill_queue_max_pkt_size()
 
 static bool test_fill_queue_small_pkts()
 {
-    notification.reset();
+    frame.reset();
     buf.reset();
 
     assert(buf.empty());
@@ -89,7 +89,7 @@ static bool test_fill_queue_small_pkts()
     buf.notify();
 
     assert(buf.full());
-    assert(buf.get_notification(notification));
+    assert(buf.get_frame(frame));
     assert(!buf.dropping());
     std::ranges::copy(u8s{5}, ins);
     assert(buf.dropping());
@@ -98,7 +98,7 @@ static bool test_fill_queue_small_pkts()
 
 static bool test_normal_operation()
 {
-    notification.reset();
+    frame.reset();
     buf.reset();
 
     assert(buf.empty());
@@ -122,9 +122,9 @@ static bool test_normal_operation()
     assert(!buf.dropping());
     buf.notify();
 
-    assert(buf.get_notification(notification));
-    assert(std::equal(p1.begin(), p1.end(), notification->begin(), notification->end()));
-    notification.reset();
+    assert(buf.get_frame(frame));
+    assert(std::equal(p1.begin(), p1.end(), frame->begin(), frame->end()));
+    frame.reset();
 
     u8s p4{6, 7, 8};
     std::ranges::copy(p4, ins);
@@ -132,20 +132,20 @@ static bool test_normal_operation()
     assert(!buf.dropping());
     buf.notify();
 
-    assert(buf.get_notification(notification));
-    assert(std::equal(p2.begin(), p2.end(), notification->begin(), notification->end()));
-    notification.reset();
+    assert(buf.get_frame(frame));
+    assert(std::equal(p2.begin(), p2.end(), frame->begin(), frame->end()));
+    frame.reset();
 
-    assert(buf.get_notification(notification));
-    assert(std::equal(p3.begin(), p3.end(), notification->begin(), notification->end()));
-    notification.reset();
+    assert(buf.get_frame(frame));
+    assert(std::equal(p3.begin(), p3.end(), frame->begin(), frame->end()));
+    frame.reset();
 
-    assert(buf.get_notification(notification));
-    assert(std::equal(p4.begin(), p4.end(), notification->begin(), notification->end()));
-    notification.reset();
+    assert(buf.get_frame(frame));
+    assert(std::equal(p4.begin(), p4.end(), frame->begin(), frame->end()));
+    frame.reset();
 
     assert(buf.empty());
-    assert(!buf.get_notification(notification));
+    assert(!buf.get_frame(frame));
     assert(!buf.dropping());
     return true;
 }

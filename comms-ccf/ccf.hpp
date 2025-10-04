@@ -59,9 +59,9 @@ enum class LogLevel : uint8_t
 template<CcfConfig Config>
 class Ccf
 {
-    using RxNotification = CircularBuffer<uint8_t, Config.rxBufSize, Config.maxPktSize>::Notification;
+    using RxFrame = CircularBuffer<uint8_t, Config.rxBufSize, Config.maxPktSize>::Frame;
 public:
-    using TxNotification = CircularBuffer<uint8_t, Config.txBufSize, Config.maxPktSize>::Notification;
+    using TxFrame = CircularBuffer<uint8_t, Config.txBufSize, Config.maxPktSize>::Frame;
 
     /// Safe to call from interrupt context
     /// **Not threadsafe** only call from a single communications
@@ -104,9 +104,9 @@ public:
     }
 
     /// Safe to call from interrupt context
-    bool charactersToSend(std::optional<TxNotification> & notification)
+    bool charactersToSend(std::optional<TxFrame> & frame)
     {
-        return txBuf.get_notification(notification);
+        return txBuf.get_frame(frame);
     }
 
     /// **Not threadsafe** only call from one thread
@@ -122,12 +122,12 @@ public:
     bool poll(const Rpc & rpc)
     {
         bool output = false;
-        std::optional<RxNotification> notification;
-        while (rxBuf.get_notification(notification))
+        std::optional<RxFrame> frame;
+        while (rxBuf.get_frame(frame))
         {
             size_t len = 0;
             // Copy to a local buffer to make sure it is contiguous
-            for (auto c : *notification)
+            for (auto c : *frame)
             {
                 pktBuf[len++] = c;
             }

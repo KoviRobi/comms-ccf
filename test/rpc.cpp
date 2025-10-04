@@ -37,7 +37,7 @@ static void rxIsr(uint8_t byte)
 
 static void txIsr()
 {
-    std::optional<decltype(ccf)::TxNotification> toTx;
+    std::optional<decltype(ccf)::TxFrame> toTx;
     while (ccf.charactersToSend(toTx))
     {
         for (auto c : *toTx)

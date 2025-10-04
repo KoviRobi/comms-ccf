@@ -52,7 +52,7 @@ fairly easily be added by getting the current next contiguous unused
 part of the buffer (i.e. the part before any wrapping) and passing that
 to the DMA engine.
 
-TODO: Forward and bidirectional iterator/range for Iterator/Notification.
+TODO: Forward and bidirectional iterator/range for Iterator/Frame.
 
 */
 
@@ -157,9 +157,9 @@ public:
         }
     }
 
-    /// Delimit the elements pushed since the most recent notification
-    /// as one packet. The consumer can then use get_notification to
-    /// get a range onto the queue.
+    /// Delimit the elements pushed since the most recent frame as one
+    /// packet. The consumer can then use get_frame to get a range onto
+    /// the queue.
     /// Note: you may want to only notify if `dropping()` is false,
     /// otherwise you are notifying of a know partial packet. If
     /// `dropping()`, then `reset_dropped()` will drop the partial packet.
@@ -178,7 +178,7 @@ public:
         notified = write;
     }
 
-    class Notification;
+    class Frame;
     class Iterator
     {
     public:
@@ -197,25 +197,25 @@ public:
         bool operator==(const Iterator & other) const { return !(*this != other); }
 
     private:
-        friend class Notification;
+        friend class Frame;
         const CircularBuffer * parent;
         size_t index;
     };
 
-    class Notification
+    class Frame
     {
     public:
-        Notification(CircularBuffer * parent_, size_t start, uint8_t len)
+        Frame(CircularBuffer * parent_, size_t start, uint8_t len)
           : parent(parent_),
             begin_(parent, start),
             end_(parent, start + len) {}
-        Notification(const Notification &) = delete;
-        Notification & operator=(const Notification &) = delete;
-        Notification(Notification && o) : begin_(o.begin_), end_(o.end_)
+        Frame(const Frame &) = delete;
+        Frame & operator=(const Frame &) = delete;
+        Frame(Frame && o) : begin_(o.begin_), end_(o.end_)
         {
             std::swap(parent, o.parent);
         }
-        Notification & operator=(Notification && o)
+        Frame & operator=(Frame && o)
         {
             parent = o.parent;
             o.parent = nullptr;
@@ -224,7 +224,7 @@ public:
             return *this;
         }
 
-        ~Notification()
+        ~Frame()
         {
             if (parent)
             {
@@ -240,12 +240,12 @@ public:
         Iterator end_;
     };
 
-    /// Gets the oldest notification, dropping any current notification
+    /// Gets the oldest frame, dropping any current frame
     /// in the given optional (for FIFO behaviour).
-    bool get_notification(std::optional<Notification> & notification)
+    bool get_frame(std::optional<Frame> & frame)
     {
         // Ensure we drop the old one first, before reading from the queue
-        notification.reset();
+        frame.reset();
         if (dropped)
         {
             debugf(DEBUG "No packet as truncating" END LOGLEVEL_ARGS);
@@ -275,14 +275,14 @@ public:
         }
         if (start != end)
         {
-            notification.emplace(this, start, size);
+            frame.emplace(this, start, size);
         }
         else
         {
             // Almost certainly an error, we checked for truncating above
             debugf(ERROR "Zero length item" END LOGLEVEL_ARGS);
         }
-        return notification.has_value();
+        return frame.has_value();
     }
 
     /// Reset the queue to the initial, empty state.
