@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from cxxfilt import InvalidName, demangle
@@ -148,9 +148,9 @@ class Section:
         return self.name.strip('"')
 
 
-@dataclass
+@dataclass(frozen=True)
 class InputSection(Section):
-    symbols: list[Symbol] = field(default_factory=list)
+    symbols: tuple[Symbol, ...] = ()
     type: str = field(init=False, default="input")
 
     def pretty_name(self, output: OutputSection | None = None) -> str:
@@ -165,9 +165,9 @@ class InputSection(Section):
             return path.name
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutputSection(Section):
-    inputs: list[InputSection] = field(default_factory=list)
+    inputs: tuple[InputSection, ...] = ()
     type: str = field(init=False, default="output")
 
 
@@ -254,9 +254,34 @@ class MemoryConfiguration:
             self.areas.append(area)
 
 
+@dataclass
+class _WipInputSection:
+    base: InputSection
+    fill: int = 0
+    symbols: list[Symbol] = field(default_factory=list)
+
+    def freeze(self) -> InputSection:
+        return replace(self.base, fill=self.fill, symbols=tuple(self.symbols))
+
+
+@dataclass
+class _WipOutputSection:
+    base: OutputSection
+    fill: int = 0
+    inputs: list[_WipInputSection] = field(default_factory=list)
+
+    def freeze(self) -> OutputSection:
+        return replace(
+            self.base,
+            fill=self.fill,
+            inputs=tuple(map(_WipInputSection.freeze, self.inputs)),
+        )
+
+
 class MemoryMap:
+
     def __init__(self) -> None:
-        self.sections: list[OutputSection] = []
+        self.sections: list[_WipOutputSection] = []
 
     def feed(self, line: str, lines: t.Iterator[str]):
         if line is None or line == "":
@@ -290,7 +315,7 @@ class MemoryMap:
 
     def new_output_section(self, name: str, line: str, lines: t.Iterator[str]):
         "See binutils/ld/ldlang.c print_output_section_statement"
-        self.sections.append(OutputSection.parse(name, line, lines))
+        self.sections.append(_WipOutputSection(OutputSection.parse(name, line, lines)))
 
     def wildcard_section(self, line: str):
         "See binutils/ld/ldlang.c print_wild_statement"
@@ -301,8 +326,10 @@ class MemoryMap:
         assert (
             self.sections != []
         ), "Expecting an output section before an input section"
-        output_section = self.sections[-1]
-        output_section.inputs.append(InputSection.parse(section, line, lines))
+        input_sections = self.sections[-1].inputs
+        input_sections.append(
+            _WipInputSection(InputSection.parse(section, line, lines))
+        )
 
     def relaxed_symbol(self, line: str):
         "See binutils/ld/ldlang.c print_input_section"
@@ -324,9 +351,9 @@ class MemoryMap:
         addr = int(line[:HEXDIGITS], 0)
         name = line[HEXDIGITS + SYMBOL_NAME_SEP :]
         assert self.sections != [], "Expecting an output section before a symbol"
-        output_section = self.sections[-1]
-        assert output_section.inputs != [], "Expecting an input section before symbol"
-        input_section = output_section.inputs[-1]
+        input_sections = self.sections[-1].inputs
+        assert input_sections != [], "Expecting an input section before symbol"
+        input_section = input_sections[-1]
         input_section.symbols.append(Symbol(name, addr, self._wildcard))
 
     def add_fill(self, line: str):
@@ -383,7 +410,7 @@ class MapFile:
             archive_members=archive_members.archives,
             discards=discards.discards,
             memory_configuration=memory_configuration.areas,
-            memory_map=memory_map.sections,
+            memory_map=list(map(_WipOutputSection.freeze, memory_map.sections)),
         )
 
     def iter_area_sections(self) -> t.Iterator[tuple[Area, list[OutputSection]]]:
