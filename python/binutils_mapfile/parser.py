@@ -99,7 +99,7 @@ class Symbol:
     wildcard: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class Section:
     _REFERENCE_RE = re.compile(r"^(?P<object>.*) \((?P<symbol>.*)\)$")
     name: str
@@ -325,10 +325,8 @@ class MemoryMap:
         name = line[HEXDIGITS + SYMBOL_NAME_SEP :]
         assert self.sections != [], "Expecting an output section before a symbol"
         output_section = self.sections[-1]
-        assert isinstance(output_section, OutputSection)
         assert output_section.inputs != [], "Expecting an input section before symbol"
         input_section = output_section.inputs[-1]
-        assert isinstance(input_section, InputSection)
         input_section.symbols.append(Symbol(name, addr, self._wildcard))
 
     def add_fill(self, line: str):
@@ -339,12 +337,10 @@ class MemoryMap:
 
         assert self.sections != [], "Expecting an output section before fill"
         output_section = self.sections[-1]
-        assert isinstance(output_section, OutputSection)
         output_section.fill += size
 
         if output_section.inputs != []:
             input_section = output_section.inputs[-1]
-            assert isinstance(input_section, InputSection)
             input_section.fill += size
 
 
