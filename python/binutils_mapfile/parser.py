@@ -11,10 +11,9 @@ from __future__ import annotations
 import re
 import typing as t
 from dataclasses import dataclass, field
-from json import dumps
 from pathlib import Path
 
-from cxxfilt import demangle
+from cxxfilt import InvalidName, demangle
 from intervaltree.intervaltree import Interval, IntervalTree
 
 BITS = 32
@@ -135,8 +134,10 @@ class Section:
         # Try to demangle C++
         if mangleIdx := name.find("._Z"):
             mangleIdx += 1  # Swallow "."
-            name = name[:mangleIdx] + dumps(demangle(name[mangleIdx:]))
-            pass
+            try:
+                name = name[:mangleIdx] + demangle(name[mangleIdx:])
+            except InvalidName:
+                pass
         line = line[SECTION_NAME_LEN:]
         addr = int(line[:HEXDIGITS], 0)
         size = int(line[HEXDIGITS + 1 : 2 * HEXDIGITS + 1], 0)
@@ -272,10 +273,10 @@ class MemoryMap:
             len(line) > SECTION_NAME_LEN + HEXDIGITS
             and line[: SECTION_NAME_LEN + HEXDIGITS].isspace()
         ):
-            self.relaxed_symbol(line[SECTION_NAME_LEN + HEXDIGITS :])
+            self.relaxed_symbol(line[SECTION_NAME_LEN + HEXDIGITS + 1 :])
         elif len(line) > SECTION_NAME_LEN and line[:SECTION_NAME_LEN].isspace():
             line = line[SECTION_NAME_LEN:]
-            sep = line[HEXDIGITS:]
+            sep = line[HEXDIGITS + 1 :]
             if sep[:ASSIGNMENT_NAME_SEP].isspace():
                 self.add_assignment(line)
             elif sep[:SYMBOL_NAME_SEP].isspace():
@@ -312,9 +313,9 @@ class MemoryMap:
     def add_assignment(self, line: str):
         "See binutils/ld/ldlang.c print_one_symbol"
         # TODO: [addr], [unresolved], or *undef*
-        addr = int(line[:HEXDIGITS], 0)
+        # addr = int(line[:HEXDIGITS], 0)
         # +2 for [0x1234567] or [unresolved]
-        assignment = line[HEXDIGITS + 2 + ASSIGNMENT_NAME_SEP :]
+        # assignment = line[HEXDIGITS + 2 + ASSIGNMENT_NAME_SEP :]
         # print("Assignment    ", f"0x{addr:08X}", f"'{assignment}'")
         # Not used -- do nothing for now
 
@@ -397,7 +398,7 @@ class MapFile:
         areas = IntervalTree(
             Interval(area.origin, area.stop, (area, []))
             for area in self.memory_configuration
-            if area.attributes
+            if area.attributes and area.length > 0
         )
         for section in self.memory_map:
             for _start, _end, (area, area_sections) in areas[section]:

@@ -53,10 +53,8 @@ def svg(
         area_short = utils.ellipsise_templates(area_name)
         area_colour = palette(area)
         area_id = f"area-{area.name}-{area.origin}"
-        sorted_outputs = list(
-            sorted(output_sections, key=lambda s: s.size)
-        )
-        output_sizes = [section.size for section in sorted_outputs]
+        sorted_outputs = list(sorted(output_sections, key=lambda s: s.size))
+        output_sizes = [section.size for section in sorted_outputs if section.size > 0]
         area_used = sum(output_sizes)
         area_width = width * area_used / area.length
         area_y = n * area_height
@@ -114,7 +112,9 @@ def svg(
             sorted_inputs = list(
                 sorted(output_section.inputs, key=lambda s: s.size, reverse=True)
             )
-            input_sizes = [section.size for section in sorted_inputs]
+            input_sizes = [
+                section.size for section in sorted_inputs if section.size > 0
+            ]
             input_normed = normalize_sizes(input_sizes, 1, 1)
             input_rects = zip(squarify(input_normed, 0, 0, 1, 1), sorted_inputs)
             for input_rect, input_section in input_rects:
