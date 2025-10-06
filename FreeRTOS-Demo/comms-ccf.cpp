@@ -14,7 +14,7 @@
 
 using namespace std::literals;
 
-static StackType_t commsCcfStack[1024];
+static StackType_t commsCcfStack[512];
 static StaticTask_t commsCcfTcb;
 
 Mutex<Ccf<{

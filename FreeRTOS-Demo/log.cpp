@@ -12,7 +12,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-static StackType_t logStack[1024];
+static StackType_t logStack[256];
 static StaticTask_t logTcb;
 static void logTask(void *)
 {
