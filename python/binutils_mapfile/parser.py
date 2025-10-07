@@ -15,25 +15,33 @@ from pathlib import Path
 
 from cxxfilt import InvalidName, demangle
 from intervaltree.intervaltree import Interval, IntervalTree
+from utils import IterWithPutBack
 
-BITS = 32
-MEMDIGITS = 2 * BITS // 8  # 32 bits in base16/hex
-HEXDIGITS = 2 + MEMDIGITS  # "0x" + MEMDIGITS
+HEX_RE = re.compile(r"\s*(0x[0-9a-fA-F]+)\b")
+RELAXED_RE = re.compile(r"\s*(0x[0-9a-fA-F]+)\s+\(size before relaxing\)")
 
 # See binutils/ld/ldmain.c add_archive_element
 REFERENCE_ALIGN = 30
 
 # TODO: I think theoretically ELF section names could be any C string,
 # but this will do for the common case.
-SECTION_NAME_RE = re.compile(r"^[0-9a-zA-Z._]+($|(?= ))")
+SECTION_NAME_RE = re.compile(r'([0-9a-zA-Z._"/]+)\b')
 # See binutils/ld/ldlang.h SECTION_NAME_MAP_LENGTH
 SECTION_NAME_LEN = 16
 # 16 actual spaces in binutils/ld/ldlang.c print_one_symbol
 SYMBOL_NAME_SEP = 16
-# Two spaces plus buffer up to 32 characters binutils/ld/ldlang.c
-# print_assignment
-# 0x01234567(10) | # [0x01234567](12) | [unresolved](12) | *undef*(7)
-ASSIGNMENT_NAME_SEP = 2 + 32 - 12
+
+LINES_WITH_LINENO = IterWithPutBack[tuple[int, str]]
+
+
+def consume_hex(s: str) -> tuple[int, str]:
+    """
+    Consumes a hex sequence (including 0x prefix and any leading space)
+    returning the number and the rest of the string
+    """
+    if m := HEX_RE.match(s):
+        return int(m[1], 0), s[m.end() :]
+    raise ValueError("Failed to find hex number in", s)
 
 
 class ArchiveMembers:
@@ -70,7 +78,8 @@ class ArchiveMembers:
         # by said object
         self.archives: dict[str, ArchiveMembers.Reference] = {}
 
-    def feed(self, line: str, lines: t.Iterator[str]):
+    def feed(self, line: str, lines: LINES_WITH_LINENO):
+        popped = None
         if line is None or line == "":
             return
         if (
@@ -84,12 +93,18 @@ class ArchiveMembers:
         else:
             definition = line
             try:
-                reference = next(lines)[REFERENCE_ALIGN:]
+                _lineno, line = popped = next(lines)
+                reference = line[REFERENCE_ALIGN:]
             except StopIteration:
                 return
-        reference = ArchiveMembers.Reference.parse(reference)
-        if reference is not None:
-            self.archives[definition] = reference
+        try:
+            reference = ArchiveMembers.Reference.parse(reference)
+            if reference is not None:
+                self.archives[definition] = reference
+        except:
+            if popped is not None:
+                lines.put_back(popped)
+            raise
 
 
 @dataclass(frozen=True)
@@ -126,23 +141,29 @@ class Section:
     T = t.TypeVar("T", bound="Section")
 
     @classmethod
-    def parse(cls: type[T], name: str, line: str, lines: t.Iterator[str]) -> T:
-        if len(name) >= SECTION_NAME_LEN - 1:
-            line = next(lines)
-        # Left pad indicates section type
-        name = name.lstrip()
-        # Try to demangle C++
-        if mangleIdx := name.find("._Z"):
-            mangleIdx += 1  # Swallow "."
-            try:
-                name = name[:mangleIdx] + demangle(name[mangleIdx:])
-            except InvalidName:
-                pass
-        line = line[SECTION_NAME_LEN:]
-        addr = int(line[:HEXDIGITS], 0)
-        size = int(line[HEXDIGITS + 1 : 2 * HEXDIGITS + 1], 0)
-        object = line[2 * HEXDIGITS + 2 :]
-        return cls(name.strip(), addr, size, object)
+    def parse(cls: type[T], name: str, line: str, lines: LINES_WITH_LINENO) -> T:
+        popped = None
+        try:
+            if len(name) >= SECTION_NAME_LEN - 1:
+                _lineno, line = popped = next(lines)
+            # Left pad indicates section type
+            name = name.lstrip()
+            # Try to demangle C++
+            if mangleIdx := name.find("._Z"):
+                mangleIdx += 1  # Swallow "."
+                try:
+                    name = name[:mangleIdx] + demangle(name[mangleIdx:])
+                except InvalidName:
+                    pass
+            line = line[SECTION_NAME_LEN:]
+            addr, line = consume_hex(line)
+            size, line = consume_hex(line)
+            object = line.lstrip()
+            return cls(name.strip(), addr, size, object)
+        except:
+            if popped is not None:
+                lines.put_back(popped)
+            raise
 
     def pretty_name(self) -> str:
         return self.name.strip('"')
@@ -182,11 +203,12 @@ class Discards:
     def __init__(self) -> None:
         self.discards = {}
 
-    def feed(self, line: str, lines: t.Iterator[str]):
+    def feed(self, line: str, lines: LINES_WITH_LINENO):
         if line is None or line == "":
             return
         elif line[0] == " " and (m := SECTION_NAME_RE.match(line[1:])):
-            discard = DiscardedSection.parse(" " + m[0], line, lines)
+            name = " " + m[1]  # For constant columns
+            discard = DiscardedSection.parse(name, line, lines)
             self.discards[discard.name] = discard
 
 
@@ -239,7 +261,7 @@ class MemoryConfiguration:
         self.header: None | list[str] = None
         self.areas = []
 
-    def feed(self, line: str, _lines: t.Iterator[str]):
+    def feed(self, line: str, _lines: LINES_WITH_LINENO):
         if not line:
             return
         if self.header is None:
@@ -283,45 +305,62 @@ class MemoryMap:
     def __init__(self) -> None:
         self.sections: list[_WipOutputSection] = []
 
-    def feed(self, line: str, lines: t.Iterator[str]):
+    def feed(self, line: str, lines: LINES_WITH_LINENO):
         if line is None or line == "":
             return
-        elif any(line.startswith(op) for op in ["START GROUP", "LOAD", "END GROUP"]):
+        elif any(
+            line.startswith(op)
+            for op in ["START GROUP", "LOAD", "END GROUP", " FILL mask"]
+        ):
             return
         elif line.startswith("/DISCARD/"):
             return
         elif m := SECTION_NAME_RE.match(line):
-            self.new_output_section(m[0], line, lines)
+            self.new_output_section(m[1], line, lines)
         elif line[0] == " " and (m := SECTION_NAME_RE.match(line[1:])):
-            self.new_input_section(" " + m[0], line, lines)
-        elif (
-            len(line) > SECTION_NAME_LEN + HEXDIGITS
-            and line[: SECTION_NAME_LEN + HEXDIGITS].isspace()
-        ):
-            self.relaxed_symbol(line[SECTION_NAME_LEN + HEXDIGITS + 1 :])
+            name = " " + m[1]  # For constant columns
+            self.new_input_section(name, line, lines)
+        elif m := RELAXED_RE.match(line):
+            size = int(m[1], 0)
+            self.relaxed_symbol(size)
         elif len(line) > SECTION_NAME_LEN and line[:SECTION_NAME_LEN].isspace():
-            line = line[SECTION_NAME_LEN:]
-            sep = line[HEXDIGITS + 1 :]
-            if sep[:ASSIGNMENT_NAME_SEP].isspace():
-                self.add_assignment(line)
-            elif sep[:SYMBOL_NAME_SEP].isspace():
-                self.add_symbol(line)
+            rest = line[SECTION_NAME_LEN:]
+            # Technically symbol names can contain any values (see
+            # e.g. rust embeddonomicon debugging with symbols) -- but
+            # this just implies that we can have symbols that look exactly
+            # like assignments so it's impossible to know in all
+            # cases. So we just use the presence of an equals to detech
+            # an assignment.
+            if " = " in rest:
+                self.add_assignment(rest)
+            elif rest[:SYMBOL_NAME_SEP].isspace():
+                line = line[SECTION_NAME_LEN:]
+                addr, rest = consume_hex(line)
+                self.add_symbol(addr, rest)
         elif "(" in line:
             self.wildcard_section(line)
         elif line[:8] == " *fill* ":
-            self.add_fill(line)
+            self.add_fill(line[8:])
         else:
             print("UNKNOWN       ", line)
 
-    def new_output_section(self, name: str, line: str, lines: t.Iterator[str]):
+    def new_output_section(self, name: str, line: str, lines: LINES_WITH_LINENO):
         "See binutils/ld/ldlang.c print_output_section_statement"
-        self.sections.append(_WipOutputSection(OutputSection.parse(name, line, lines)))
+        try:
+            self.sections.append(
+                _WipOutputSection(OutputSection.parse(name, line, lines))
+            )
+        except ValueError:
+            # Output sections without addresses are possible if they
+            # haven't had anything put in them
+            # The parse call puts back a line if it popped a line
+            pass
 
     def wildcard_section(self, line: str):
         "See binutils/ld/ldlang.c print_wild_statement"
         self._wildcard = line.strip()
 
-    def new_input_section(self, section: str, line: str, lines: t.Iterator[str]):
+    def new_input_section(self, section: str, line: str, lines: LINES_WITH_LINENO):
         "See binutils/ld/ldlang.c print_intput_statement"
         assert (
             self.sections != []
@@ -331,13 +370,11 @@ class MemoryMap:
             _WipInputSection(InputSection.parse(section, line, lines))
         )
 
-    def relaxed_symbol(self, line: str):
+    def relaxed_symbol(self, _size: int):
         "See binutils/ld/ldlang.c print_input_section"
-        _size = int(line[:HEXDIGITS], 0)
-        if "(size before relaxing)" not in line:
-            print("Was expecting size before relaxing")
+        pass
 
-    def add_assignment(self, line: str):
+    def add_assignment(self, _line: str):
         "See binutils/ld/ldlang.c print_one_symbol"
         # TODO: [addr], [unresolved], or *undef*
         # addr = int(line[:HEXDIGITS], 0)
@@ -346,21 +383,19 @@ class MemoryMap:
         # print("Assignment    ", f"0x{addr:08X}", f"'{assignment}'")
         # Not used -- do nothing for now
 
-    def add_symbol(self, line: str):
+    def add_symbol(self, addr: int, rest: str):
         "See binutils/ld/ldlang.c print_one_symbol"
-        addr = int(line[:HEXDIGITS], 0)
-        name = line[HEXDIGITS + SYMBOL_NAME_SEP :]
+        name = rest[SYMBOL_NAME_SEP:]
         assert self.sections != [], "Expecting an output section before a symbol"
         input_sections = self.sections[-1].inputs
         assert input_sections != [], "Expecting an input section before symbol"
         input_section = input_sections[-1]
         input_section.symbols.append(Symbol(name, addr, self._wildcard))
 
-    def add_fill(self, line: str):
+    def add_fill(self, rest: str):
         "See binutils/ld/ldlang.c print_padding_statement"
-        line = line[SECTION_NAME_LEN:]
-        _addr = int(line[:HEXDIGITS], 0)
-        size = int(line[HEXDIGITS + 1 : 2 * HEXDIGITS + 1], 0)
+        _addr, rest = consume_hex(rest)
+        size, _rest = consume_hex(rest)
 
         assert self.sections != [], "Expecting an output section before fill"
         output_section = self.sections[-1]
@@ -395,8 +430,10 @@ class MapFile:
         }
         parser = None
 
-        lines = (line[:-1] for line in iter(file_like.readline, ""))
-        for line in lines:
+        lines = IterWithPutBack(
+            enumerate(line[:-1] for line in iter(file_like.readline, ""))
+        )
+        for _lineno, line in lines:
             if line in sections:
                 parser = sections[line]
                 continue

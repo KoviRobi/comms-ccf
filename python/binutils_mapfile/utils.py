@@ -77,3 +77,30 @@ def binary_prefix(number: int | float) -> str:
         return f"{number}{prefix}"
     else:
         return f"{number:.2f}{prefix}"
+
+
+class IterWithPutBack[T]:
+    """
+    Iterator that allows you to put elements back if you decide you
+    didn't want to consume them
+    """
+
+    def __init__(self, iter: t.Iterator[T]):
+        self._iter = iter
+        self._front: list[T] = []
+
+    def __iter__(self) -> t.Iterator[T]:
+        return self
+
+    def __next__(self) -> T:
+        if self._front:
+            return self._front.pop()
+        return next(self._iter)
+
+    def put_back(self, elem: T):
+        self._front.append(elem)
+
+    def peek(self) -> T:
+        if not self._front:
+            self._front.append(next(self._iter))
+        return self._front[-1]
