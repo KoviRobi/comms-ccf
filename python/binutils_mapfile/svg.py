@@ -1,3 +1,7 @@
+"""
+Plot a mapfile as a tree map using squarify
+"""
+
 from __future__ import annotations
 
 import sys
@@ -53,10 +57,10 @@ def svg(
         area_short = utils.ellipsise_templates(area_name)
         area_colour = palette(area)
         area_id = f"area-{area.name}-{area.origin:08X}"
-        sorted_outputs = list(sorted(output_sections, key=lambda s: s.size))
-        output_sizes = [section.size for section in sorted_outputs if section.size > 0]
+        sorted_outputs = list(sorted(output_sections, key=len))
+        output_sizes = [len(section) for section in sorted_outputs if len(section) > 0]
         area_used = sum(output_sizes)
-        area_width = width * area_used / area.length
+        area_width = width * area_used / len(area)
         area_y = n * area_height
 
         area_desc = area_short
@@ -65,7 +69,7 @@ def svg(
         area_desc += f"\n0x{area.origin:08X}"
         area_desc += f" + 0x{area_used:X}"
         area_desc += f" ({utils.binary_prefix(area_used)},"
-        area_desc += f" {100*area_used/area.length:.2f}% used)"
+        area_desc += f" {100*area_used/len(area):.2f}% used)"
 
         output_normed = normalize_sizes(output_sizes, 1, 1)
         output_rects = list(zip(squarify(output_normed, 0, 0, 1, 1), sorted_outputs))
@@ -86,11 +90,11 @@ def svg(
             if output_short != output_name:
                 output_desc += "\n" + output_name
             output_desc += f"\n0x{output_section.address:08X}"
-            output_desc += f" + 0x{output_section.size:08X}"
+            output_desc += f" + 0x{len(output_section):08X}"
             output_desc += (
-                f" ({utils.binary_prefix(output_section.size)}B,"
-                + f" {100*output_section.size/area_used:.2f}% used"
-                + f"  {100*output_section.size/area.length:.2f}% total of {area_name})"
+                f" ({utils.binary_prefix(len(output_section))}B,"
+                + f" {100*len(output_section)/area_used:.2f}% used"
+                + f"  {100*len(output_section)/len(area):.2f}% total of {area_name})"
             )
             if output_section.fill > 0:
                 output_desc += f"\nfill: {output_section.fill:08}"
@@ -109,11 +113,9 @@ def svg(
                 f'{area_width * output_rect["dx"]}',
                 f'{area_height * output_rect["dy"]}"/>',
             )
-            sorted_inputs = list(
-                sorted(output_section.inputs, key=lambda s: s.size, reverse=True)
-            )
+            sorted_inputs = list(sorted(output_section.inputs, key=len, reverse=True))
             input_sizes = [
-                section.size for section in sorted_inputs if section.size > 0
+                len(section) for section in sorted_inputs if len(section) > 0
             ]
             input_normed = normalize_sizes(input_sizes, 1, 1)
             input_rects = zip(squarify(input_normed, 0, 0, 1, 1), sorted_inputs)
@@ -133,12 +135,12 @@ def svg(
                 else:
                     input_desc += "\n" + input_section.object
                 input_desc += f"\n0x{input_section.address:08X}"
-                input_desc += f" + 0x{input_section.size:08X}"
+                input_desc += f" + 0x{len(input_section):08X}"
                 input_desc += (
-                    f" ({utils.binary_prefix(input_section.size)}B,"
-                    + f"{100*input_section.size/output_section.size:.2f}% of {output_name},"
-                    + f" {100*input_section.size/area_used:.2f}% used,"
-                    + f" {100*input_section.size/area.length:.2f}% total of {area_name})"
+                    f" ({utils.binary_prefix(len(input_section))}B,"
+                    + f"{100*len(input_section)/len(output_section):.2f}% of {output_name},"
+                    + f" {100*len(input_section)/area_used:.2f}% used,"
+                    + f" {100*len(input_section)/len(area):.2f}% total of {area_name})"
                 )
                 if input_section.fill > 0:
                     input_desc += f"\nfill: {input_section.fill:08}"

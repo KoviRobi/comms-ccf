@@ -2,13 +2,14 @@
 Compare two different mapfiles, outputting a markdown or an SVG summary
 """
 
+from dataclasses import dataclass, field
 import typing as t
 from parser import Area, InputSection, MapFile, OutputSection, Section
 from pathlib import Path
 from random import Random
 
 import utils
-from svg import svg
+from svg import svg as write_svg
 
 
 def shorten_with_tooltip(input_section, output_section):
@@ -23,9 +24,16 @@ def shorten_with_tooltip(input_section, output_section):
     return name
 
 
-def compare(old_mapfile: MapFile, new_mapfile: MapFile, md_out: t.TextIO, svg_out: t.TextIO):
-    grew = set[Area | Section]()
-    new = set[Area | Section]()
+@dataclass
+class Diff:
+    grew: dict[Area | Section, int] = field(default_factory=dict)
+    shrunk: dict[Area | Section, int] = field(default_factory=dict)
+    added: dict[Area | Section, int] = field(default_factory=dict)
+    removed: dict[Area | Section, int] = field(default_factory=dict)
+
+
+def compare(old_mapfile: MapFile, new_mapfile: MapFile) -> Diff:
+    diff = Diff()
     for (old_area, old_sections), (new_area, new_sections) in zip(
         old_mapfile.iter_area_sections(), new_mapfile.iter_area_sections()
     ):
@@ -33,27 +41,24 @@ def compare(old_mapfile: MapFile, new_mapfile: MapFile, md_out: t.TextIO, svg_ou
         new_area_size = 0
         old_out_secs: dict[str, OutputSection] = {}
         for sec in old_sections:
-            old_area_size += sec.size
+            old_area_size += len(sec)
             old_out_secs[sec.name] = sec
         for new_out_sec in new_sections:
-            new_area_size += new_out_sec.size
+            new_area_size += len(new_out_sec)
             md_out.write("\n")
             pretty = new_out_sec.pretty_name()
             if new_out_sec.name not in old_out_secs:
                 size = utils.binary_prefix(new_out_sec.size)
-                md_out.write(f"Added {size}B due to section {pretty}\n")
-                new.add(new_out_sec)
+                diff.added[new_out_sec] = new_out_sec.size
                 continue
             old_out_sec = old_out_secs.pop(new_out_sec.name)
-            size_increase = new_out_sec.size - old_out_sec.size
-            abs_change = utils.binary_prefix(abs(size_increase))
+            size_increase = len(new_out_sec) - len(old_out_sec)
             if size_increase == 0:
                 continue
             elif size_increase < 0:
-                md_out.write(f"Shrunk by {abs_change}B from section {pretty}\n")
-            else:  # old_out_sec.size < new_out_sec.size
-                grew.add(new_out_sec)
-                md_out.write(f"Grew by {abs_change}B from section {pretty}\n")
+                diff.shrunk[new_out_sec] = -size_increase
+            else:  # size_increase > 0
+                diff.grew[new_out_sec] = size_increase
 
             old_in_secs = dict[str, InputSection](
                 # Note: object names are expected to be the same
@@ -67,41 +72,49 @@ def compare(old_mapfile: MapFile, new_mapfile: MapFile, md_out: t.TextIO, svg_ou
                 key = Path(new_in_sec.object).name + " " + new_in_sec.name
                 pretty = shorten_with_tooltip(new_in_sec, new_out_sec)
                 if key not in old_in_secs:
-                    size = utils.binary_prefix(new_in_sec.size)
-                    md_out.write(f"- Added {size}B due to input {pretty}\n")
-                    new.add(new_in_sec)
+                    diff.added[new_in_sec] = new_in_sec.size
                     continue
                 old_in_sec = old_in_secs.pop(key)
-                if old_in_sec.size == new_in_sec.size:
+                size_increase = len(new_in_sec) - len(old_in_sec)
+                if size_increase == 0:
                     continue
-                elif old_in_sec.size > new_in_sec.size:
-                    size = utils.binary_prefix(old_in_sec.size - new_in_sec.size)
-                    md_out.write(f"- Shrunk by {size}B from input {pretty}\n")
-                else:  # old_in_sec.size < new_in_sec.size
-                    size = utils.binary_prefix(new_in_sec.size - old_in_sec.size)
-                    md_out.write(f"- Grew by {size}B from input {pretty}\n")
-                    grew.add(new_in_sec)
+                elif size_increase < 0:
+                    diff.shrunk[new_in_sec] = -size_increase
+                else:  # size_increase > 0
+                    diff.grew[new_in_sec] = size_increase
             for removed in old_in_secs.values():
-                pretty = shorten_with_tooltip(removed, new_out_sec)
-                size = utils.binary_prefix(removed.size)
-                md_out.write(f"- Removed {size}B due to input {pretty}\n")
+                diff.removed[removed] = removed.size
         for removed in old_out_secs.values():
-            pretty = removed.pretty_name()
-            size = utils.binary_prefix(removed.size)
-            md_out.write(f"- Removed {size}B due to section {pretty}\n")
-        if old_area_size < new_area_size:
-            grew.add(new_area)
+            diff.removed[removed] = removed.size
+        size_increase = len(new_area) - len(old_area)
+        if size_increase < 0:
+            diff.shrunk[new_area] = size_increase
+        elif size_increase > 0:
+            diff.grew[new_area] = size_increase
 
+    return diff
+
+def md(diff: Diff, md_out: t.TextIO):
+        md_out.write(f"Added {size}B due to section {pretty}\n")
+        md_out.write(f"Shrunk by {abs_change}B from section {pretty}\n")
+        md_out.write(f"Grew by {abs_change}B from section {pretty}\n")
+            md_out.write(f"- Added {size}B due to input {pretty}\n")
+            md_out.write(f"- Shrunk by {size}B from input {pretty}\n")
+            md_out.write(f"- Grew by {size}B from input {pretty}\n")
+        md_out.write(f"- Removed {size}B due to input {pretty}\n")
+    md_out.write(f"- Removed {size}B due to section {pretty}\n")
+
+def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
     random = Random(1234)
 
     def palette(entry: Area | Section) -> str:
         r = random.randint(0, 0x20)
         g = random.randint(0, 0x20)
         b = random.randint(0, 0x80)
-        if entry in grew:
+        if entry in diff.grew:
             g += 0x7F
-        elif entry in new:
+        elif entry in diff.added:
             g += 0xBF
         return f"#{r:02X}{g:02X}{b:02X}"
 
-    svg(new_mapfile, palette, svg_out)
+    write_svg(mapfile, palette, svg_out)

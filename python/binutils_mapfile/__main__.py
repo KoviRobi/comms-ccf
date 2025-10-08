@@ -1,3 +1,7 @@
+"""
+Tool for analysing a mapfile, or comparing two mapfiles.
+"""
+
 import sys
 from argparse import ArgumentParser
 from parser import MapFile

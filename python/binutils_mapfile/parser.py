@@ -138,6 +138,9 @@ class Section:
         """
         return self.address + self.size + self.fill
 
+    def __len__(self) -> int:
+        return self.size + self.fill
+
     T = t.TypeVar("T", bound="Section")
 
     @classmethod
@@ -222,6 +225,7 @@ class Area:
     origin: int
     length: int
     attributes: frozenset[str]
+    type: str = field(init=False, default="area")
 
     @property
     def start(self):
@@ -236,6 +240,9 @@ class Area:
         Return first byte past the area, as in range or mem[start:stop] syntax.
         """
         return self.origin + self.length
+
+    def __len__(self) -> int:
+        return self.length
 
     @classmethod
     def parse(cls, name: str, origin: str, length: str, attributes: str = ""):
@@ -458,7 +465,7 @@ class MapFile:
         areas = IntervalTree(
             Interval(area.origin, area.stop, (area, []))
             for area in self.memory_configuration
-            if area.attributes and area.length > 0
+            if area.attributes and len(area) > 0
         )
         for section in self.memory_map:
             for _start, _end, (area, area_sections) in areas[section]:
