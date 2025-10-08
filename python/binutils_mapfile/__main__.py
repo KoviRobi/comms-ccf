@@ -8,6 +8,7 @@ from parser import MapFile
 from pathlib import Path
 from random import Random
 
+from diff import compare
 from svg import svg
 from yaml import diffable_format
 

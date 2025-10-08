@@ -120,7 +120,7 @@ def svg(
             input_normed = normalize_sizes(input_sizes, 1, 1)
             input_rects = zip(squarify(input_normed, 0, 0, 1, 1), sorted_inputs)
             for input_rect, input_section in input_rects:
-                input_name = input_section.pretty_name(output_section)
+                input_name = input_section.pretty_name(output_section.pretty_name())
                 input_short = utils.ellipsise_templates(input_name)
 
                 input_desc = input_short

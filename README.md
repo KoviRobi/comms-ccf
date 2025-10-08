@@ -15,7 +15,7 @@ optimisation [`-Og`].)
 ## Status: Proof of concept
 
 Currently there is a working demo in
-[FreeRTOS-Demo/](/FreeRTOS-Demo/README.md) which should be possible to
+[FreeRTOS-Demo/](/FreeRTOS-Demo/) which should be possible to
 port to other platforms. There is some Python support in
 [python/](python/) which can connect to the demo and issue RPC commands.
 
@@ -62,7 +62,7 @@ layer neater.
 
 ## Demo & Resource use
 
-There is a demo in the [FreeRTOS-Demo/](/FreeRTOS-Demo/README.md) folder,
+There is a demo in the [FreeRTOS-Demo/](/FreeRTOS-Demo/) folder,
 with detailed information about where the flash/memory use comes from.
 
 A summary of the resurce use is copied below from the
@@ -72,12 +72,12 @@ A summary of the resurce use is copied below from the
 |-----------------------------------------------------------------------------------|-------|--------|
 | 0. No Comms-CCF                                                                   | 3972B | 11416B |
 | 1. Add Comms-CCF, no RPC handlers ([2KiB stack][1bss], [2KiB flash][1text])       | 6112B | 13524B |
-| 2. Add version RPC call ([24B RAM][1bss], [904B flash][1text])                    | 6136B | 14428B |
-| 3. Add `add` call ([28B RAM][1bss], [736BB flash][1text])                         | 6164B | 15164B |
-| 4. Add `sub` call, similar to previous ([28B RAM][1bss], [60B flash][1text])      | 6192B | 15224B |
-| 5. Add `greet` call ([24B RAM][1bss], [308B flash][1text])                        | 6216B | 15532B |
-| 6  Add `read_mem` and `write_mem` calls ([56B RAM][1bss], [1.4KiBB flash][1text]) | 6272B | 16956B |
-| 7. Add log task ([1KiB stack][1bss], [4KiB flash][1text])                         | 7384B | 21148B |
+| 2. Add version RPC call ([24B RAM][2bss], [904B flash][2text])                    | 6136B | 14428B |
+| 3. Add `add` call ([28B RAM][3bss], [736BB flash][3text])                         | 6164B | 15164B |
+| 4. Add `sub` call, similar to previous ([28B RAM][4bss], [60B flash][4text])      | 6192B | 15224B |
+| 5. Add `greet` call ([24B RAM][5bss], [308B flash][5text])                        | 6216B | 15532B |
+| 6  Add `read_mem` and `write_mem` calls ([56B RAM][6bss], [1.4KiBB flash][6text]) | 6272B | 16956B |
+| 7. Add log task ([1KiB stack][7bss], [4KiB flash][7text])                         | 7384B | 21148B |
 
 ## Acknowledgements
 
@@ -170,15 +170,15 @@ supports many types (more than I end up using).
 
 [1text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
 [1bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[2text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[2bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[3text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[3bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[4text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[4bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[5text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[5bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[6text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[6bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[7text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[7bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
+[2text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-1-2.svg#area-FLASH-00000000-output-.text-00000000
+[2bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-1-2.svg#area-SRAM-20000000-output-.bss-20000164
+[3text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-2-3.svg#area-FLASH-00000000-output-.text-00000000
+[3bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-2-3.svg#area-SRAM-20000000-output-.bss-20000164
+[4text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-3-4.svg#area-FLASH-00000000-output-.text-00000000
+[4bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-3-4.svg#area-SRAM-20000000-output-.bss-20000164
+[5text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-4-5.svg#area-FLASH-00000000-output-.text-00000000
+[5bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-4-5.svg#area-SRAM-20000000-output-.bss-20000164
+[6text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-5-6.svg#area-FLASH-00000000-output-.text-00000000
+[6bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-5-6.svg#area-SRAM-20000000-output-.bss-20000164
+[7text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-6-7.svg#area-FLASH-00000000-output-.text-00000000
+[7bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-6-7.svg#area-SRAM-20000000-output-.bss-20000164

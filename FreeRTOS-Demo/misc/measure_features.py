@@ -14,7 +14,7 @@ os.chdir(sourcedir)
 sys.path.append("../python/binutils_mapfile")
 
 from parser import MapFile
-from diff import compare
+from diff import compare, md, svg
 
 build = "minsizerel"
 run(split(f"cmake --preset {build}"), check=True)
@@ -30,9 +30,9 @@ def globkey(p: Path) -> int:
     return int(p.name.removeprefix(prefix).removesuffix(suffix))
 
 
-md = scriptdir / "compare.md"
+md_file = scriptdir / "compare.md"
 
-with md.open("wt") as md_out:
+with md_file.open("wt") as md_out:
     prev = None
     p_file = None
     m = None
@@ -52,7 +52,9 @@ with md.open("wt") as md_out:
         with file.open("rt") as fp:
             mapfile = MapFile.parse(fp)
         if prev is not None and p_file is not None and m is not None:
+            diff = compare(prev, mapfile)
             md_out.write(f"\n## Comparing {p_file.name} to {file.name}")
+            md(diff, md_out)
             with (scriptdir / f"compare-{m}-{n}.svg").open("wt") as svg_out:
-                compare(prev, mapfile, md_out, svg_out)
+                svg(mapfile, diff, svg_out)
         prev, p_file, m = mapfile, file, n

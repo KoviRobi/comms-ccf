@@ -168,7 +168,7 @@ class Section:
                 lines.put_back(popped)
             raise
 
-    def pretty_name(self) -> str:
+    def pretty_name(self, _parent_prefix: str = "") -> str:
         return self.name.strip('"')
 
 
@@ -177,11 +177,10 @@ class InputSection(Section):
     symbols: tuple[Symbol, ...] = ()
     type: str = field(init=False, default="input")
 
-    def pretty_name(self, output: OutputSection | None = None) -> str:
-        prefix = ""
-        if output is not None:
-            prefix = output.pretty_name() + "."
-        noprefix = super().pretty_name().removeprefix(prefix)
+    def pretty_name(self, parent_prefix: str = "") -> str:
+        noprefix = super().pretty_name().removeprefix(parent_prefix)
+        if parent_prefix and noprefix.startswith("."):
+            noprefix = noprefix[1:]
         if noprefix:
             return noprefix.strip('"')
         else:
@@ -252,6 +251,9 @@ class Area:
             length=int(length, 0),
             attributes=frozenset(attributes),
         )
+
+    def pretty_name(self, _parent_prefix: str = "") -> str:
+        return self.name.strip('"')
 
 
 class MemoryConfiguration:
