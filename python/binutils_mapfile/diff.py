@@ -3,6 +3,8 @@ Compare two different mapfiles, outputting a markdown or an SVG summary
 """
 
 import typing as t
+from collections import defaultdict
+from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from itertools import groupby
 from parser import Area, InputSection, MapFile, OutputSection, Section
@@ -25,13 +27,27 @@ def shorten_with_details(section_or_area, parent_prefix: str = ""):
         name = f'<details style="display:inline-block;"><summary><a>{short_name}</a></summary>{name}</details>'
     return name
 
+
 class Change(StrEnum):
     Add = auto()
     Remove = auto()
     Increase = auto()
     Decrease = auto()
 
-Diff = list[tuple[Area | OutputSection | InputSection, Change, int]]
+
+Region = Area | OutputSection | InputSection
+
+
+@dataclass(frozen=True)
+class Hunk:
+    """One item of a diff, name comes from `diff` tool"""
+    region: Region
+    change: Change
+    value: int
+
+
+Diff = list[Hunk]
+
 
 def compare(old_mapfile: MapFile, new_mapfile: MapFile) -> Diff:
     diff = Diff()
@@ -47,16 +63,16 @@ def compare(old_mapfile: MapFile, new_mapfile: MapFile) -> Diff:
         for new_out_sec in new_sections:
             new_area_size += len(new_out_sec)
             if new_out_sec.name not in old_out_secs:
-                diff.append((new_out_sec, Change.Add, len(new_out_sec)))
+                diff.append(Hunk(new_out_sec, Change.Add, len(new_out_sec)))
                 continue
             old_out_sec = old_out_secs.pop(new_out_sec.name)
             size_increase = len(new_out_sec) - len(old_out_sec)
             if size_increase == 0:
                 continue
             elif size_increase < 0:
-                diff.append((new_out_sec, Change.Decrease, -size_increase))
+                diff.append(Hunk(new_out_sec, Change.Decrease, -size_increase))
             else:  # size_increase > 0
-                diff.append((new_out_sec, Change.Increase, size_increase))
+                diff.append(Hunk(new_out_sec, Change.Increase, size_increase))
 
             old_in_secs = dict[str, InputSection](
                 # Note: object names are expected to be the same
@@ -69,44 +85,107 @@ def compare(old_mapfile: MapFile, new_mapfile: MapFile) -> Diff:
             for new_in_sec in new_out_sec.inputs:
                 key = Path(new_in_sec.object).name + " " + new_in_sec.name
                 if key not in old_in_secs:
-                    diff.append((new_in_sec, Change.Add, len(new_in_sec)))
+                    diff.append(Hunk(new_in_sec, Change.Add, len(new_in_sec)))
                     continue
                 old_in_sec = old_in_secs.pop(key)
                 size_increase = len(new_in_sec) - len(old_in_sec)
                 if len(old_in_sec) == len(new_in_sec):
                     continue
                 elif size_increase < 0:
-                    diff.append((new_in_sec, Change.Decrease, -size_increase))
+                    diff.append(Hunk(new_in_sec, Change.Decrease, -size_increase))
                 else:  # size_increase > 0
-                    diff.append((new_in_sec, Change.Increase, size_increase))
+                    diff.append(Hunk(new_in_sec, Change.Increase, size_increase))
             for removed in old_in_secs.values():
-                diff.append((removed, Change.Remove, len(removed)))
+                diff.append(Hunk(removed, Change.Remove, len(removed)))
         for removed in old_out_secs.values():
-            diff.append((removed, Change.Remove, len(removed)))
+            diff.append(Hunk(removed, Change.Remove, len(removed)))
         size_increase = len(new_area) - len(old_area)
         if size_increase < 0:
-            diff.append((new_area, Change.Decrease, size_increase))
+            diff.append(Hunk(new_area, Change.Decrease, size_increase))
         elif size_increase > 0:
-            diff.append((new_area, Change.Increase, size_increase))
+            diff.append(Hunk(new_area, Change.Increase, size_increase))
+
+    # If size changed (or even if it didn't) because template parameters
+    # changed, we will see a remove and an addition. Here we try to
+    # detect them.
+    @dataclass
+    class Renames:
+        # For add/remove the size is just the same as len(region) anyway
+        add: list[Region] = field(default_factory=list)
+        remove: list[Region] = field(default_factory=list)
+
+    # First we group potential matches by their short name (multiple
+    # templates may have the same short name).
+    renames: defaultdict[str, Renames] = defaultdict(Renames)
+    for hunk in diff:
+        if hunk.change not in [Change.Add, Change.Remove]:
+            continue
+        name = hunk.region.pretty_name()
+        short_name = utils.ellipsise_templates(name)
+        if name == short_name:
+            # No templates, can be ignored
+            continue
+        rename = renames[short_name]
+        if hunk.change == Change.Add:
+            rename.add.append(hunk.region)
+        elif hunk.change == Change.Remove:
+            rename.remove.append(hunk.region)
+
+    # Then we remove one half of a match (the removal, as that is
+    # the old region/address), and change the addition to a size
+    # increase/decrease.
+    to_remove: set[Region] = set()
+    # Region to size increase/decrease
+    to_change: dict[Region, int] = {}
+    for _short, rename in renames.items():
+        for add, remove in zip(
+            sorted(rename.add, key=len), sorted(rename.remove, key=len)
+        ):
+            size_increase = len(add) - len(remove)
+            # The region added is always the new region
+            to_change[add] = size_increase
+            to_remove.add(remove)
+
+    def update(hunk: Hunk) -> Hunk | None:
+        size_increase = to_change.get(hunk.region, None)
+        if size_increase is None:
+            return hunk
+        if size_increase == 0:
+            return None
+        if size_increase < 0:
+            return Hunk(hunk.region, Change.Decrease, -size_increase)
+        else:
+            return Hunk(hunk.region, Change.Increase, size_increase)
+
+    diff = [
+        hunk
+        for hunk in map(update, diff)
+        if hunk is not None
+        if hunk.region not in to_remove
+    ]
 
     return diff
+
 
 def md(diff: Diff, md_out: t.TextIO):
     # Sort by size change so biggest is at top. But preserve implicit
     # hierarchy in the ordering, by grouping items
-    for region, change, size_change in (
+    for hunk in (
         element
-        for _region, grouper in groupby(diff, key=lambda r_c_v: r_c_v[0].type)
-        for element in sorted(grouper, key=lambda r_c_v: r_c_v[2], reverse=True)
+        for _region, grouper in groupby(diff, key=lambda hunk: hunk.region.type)
+        for element in sorted(grouper, key=lambda hunk: hunk.value, reverse=True)
     ):
-        size = utils.binary_prefix(size_change)
-        desc = f"{region.type} {shorten_with_details(region)}"
-        if region.type == "area":
-            md_out.write(f"### {change.capitalize()} {size}B due to {desc}\n\n")
-        elif region.type == "output":
-            md_out.write(f"\n{change.capitalize()} {size}B due to {desc}\n\n")
-        else: # region.type == "input"
-            md_out.write(f"- {change.capitalize()} {size}B due to {desc}\n")
+        size = utils.binary_prefix(hunk.value)
+        desc = f"{hunk.region.type} {shorten_with_details(hunk.region)}"
+        if hunk.region.type == "area":
+            md_out.write(f"### {hunk.change.capitalize()} {size}B due to {desc}\n\n")
+        elif hunk.region.type == "output":
+            md_out.write(f"\n{hunk.change.capitalize()} {size}B due to {desc}\n\n")
+        elif hunk.region.type == "input":
+            md_out.write(f"- {hunk.change.capitalize()} {size}B due to {desc}\n")
+        else:
+            assert f"Unknown region type {hunk.region.type}"
+
 
 def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
     random = Random(1234)
@@ -114,20 +193,22 @@ def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
     grew = set()
     added = set()
 
-    for region, change, _value in diff:
-        if change == Change.Add:
-            added.add(region)
-        elif change == Change.Increase:
-            grew.add(region)
+    for hunk in diff:
+        if hunk.change == Change.Add:
+            added.add(hunk.region)
+        elif hunk.change == Change.Increase:
+            grew.add(hunk.region)
 
+    objects: dict[str, int] = {}
     def palette(entry: Area | Section) -> str:
-        r = random.randint(0, 0x20)
-        g = random.randint(0, 0x20)
-        b = random.randint(0, 0x80)
-        if entry in grew:
-            g += 0x7F
-        elif entry in added:
-            g += 0xBF
-        return f"#{r:02X}{g:02X}{b:02X}"
+        color = random.randint(0, 0xFFFFFF)
+        if isinstance(entry, InputSection):
+            color = color & 0x1F1FFF
+            objects[entry.object] = objects.get(entry.object, color)
+            if entry in grew:
+                color = color | 0x00A000
+            elif entry in added:
+                color = color | 0x00E000
+        return f"#{color:06X}"
 
     write_svg(mapfile, palette, svg_out)
