@@ -4,10 +4,13 @@ Tool for analysing a mapfile, or comparing two mapfiles.
 
 import sys
 from argparse import ArgumentParser
+from glob import glob
 from parser import MapFile
 from pathlib import Path
 
 from diff import compare
+from diff import md as diff_md
+from diff import svg as diff_svg
 from svg import svg
 from yaml import diffable_format
 
@@ -18,21 +21,43 @@ def main():
     to diff
     """
     parser = ArgumentParser()
-    parser.add_argument("mapfile", type=Path)
+    parser.add_argument("mapfile", nargs="+", type=glob)
     parser.add_argument("--yaml", type=Path, help="Output a YAML suitable for diff")
     parser.add_argument("--svg", type=Path, help="Output an SVG treemap")
     args = parser.parse_args()
-    with args.mapfile.open("rt") as fp:
-        global mapfile  # for `python -i <this file> <mapfile>`
-        mapfile = MapFile.parse(fp)
-        if not args.yaml and not args.svg:
-            diffable_format(mapfile, sys.stdout)
-        if args.yaml:
-            with args.yaml.open("wt") as file:
-                diffable_format(mapfile, file)
-        if args.svg:
-            with args.svg.open("wt") as file:
-                svg(mapfile, palette, file=file)
+    mapfiles = [Path(mapfile) for glob in args.mapfile for mapfile in glob]
+
+    previous = None
+    for n, mapfile in enumerate(mapfiles):
+        with mapfile.open("rt") as fp:
+            mapfile = MapFile.parse(fp)
+            diff = None
+            if previous is not None:
+                diff = compare(previous, mapfile)
+            if not args.yaml and not args.svg:
+                diffable_format(mapfile, sys.stdout)
+            if args.yaml:
+                yaml_file = args.yaml
+                if len(mapfiles) > 1:
+                    yaml_file = args.yaml.with_suffix(f".{n}{args.yaml.suffix}")
+                with yaml_file.open("wt") as yaml_out:
+                    diffable_format(mapfile, yaml_out)
+                if diff is not None:
+                    yaml_file = args.yaml.with_suffix(f".{n-1}-{n}{args.yaml.suffix}")
+                    with yaml_file.open("wt") as yaml_out:
+                        diff_md(diff, yaml_out)
+            if args.svg:
+                svg_file = args.svg
+                if len(mapfiles) > 1:
+                    svg_file = args.svg.with_suffix(f".{n}{args.svg.suffix}")
+                with svg_file.open("wt") as svg_out:
+                    svg(mapfile, svg_out)
+                    if diff is not None:
+                        svg_file = args.svg.with_suffix(f".{n-1}-{n}{args.svg.suffix}")
+                        with svg_file.open("wt") as svg_out:
+                            diff_svg(mapfile, diff, svg_out)
+
+            previous = mapfile
 
 
 if __name__ == "__main__":
