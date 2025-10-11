@@ -8,15 +8,22 @@ import sys
 import typing as t
 from parser import MapFile
 from pathlib import Path
+from random import Random
 
 import utils
 from squarify import normalize_sizes, squarify
 
+random = Random(1234)
+
+
+def random_palette(_) -> str:
+    return f"#{random.randint(0, ((1 << 24) - 1)):06X}"
+
 
 def svg(
     mapfile: MapFile,
-    palette,
     file: t.TextIO = sys.stdout,
+    palette=random_palette,
     width: int = 297,
     height: int = 210,
     area_overlay: bool = True,

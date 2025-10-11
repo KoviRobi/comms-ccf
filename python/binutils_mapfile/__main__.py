@@ -6,7 +6,6 @@ import sys
 from argparse import ArgumentParser
 from parser import MapFile
 from pathlib import Path
-from random import Random
 
 from diff import compare
 from svg import svg
@@ -32,11 +31,6 @@ def main():
             with args.yaml.open("wt") as file:
                 diffable_format(mapfile, file)
         if args.svg:
-            random = Random(1234)
-
-            def palette(_) -> str:
-                return f"#{random.randint(0, ((1 << 24) - 1)):06X}"
-
             with args.svg.open("wt") as file:
                 svg(mapfile, palette, file=file)
 

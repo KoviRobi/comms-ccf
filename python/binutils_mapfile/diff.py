@@ -211,4 +211,4 @@ def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
                 color = color | 0x00E000
         return f"#{color:06X}"
 
-    write_svg(mapfile, palette, svg_out)
+    write_svg(mapfile, svg_out, palette)
