@@ -190,14 +190,17 @@ def md(diff: Diff, md_out: t.TextIO):
 def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
     random = Random(1234)
 
-    grew = set()
     added = set()
+    grew = set()
+    shrunk = set()
 
     for hunk in diff:
         if hunk.change == Change.Add:
             added.add(hunk.region)
         elif hunk.change == Change.Increase:
             grew.add(hunk.region)
+        elif hunk.change == Change.Decrease:
+            shrunk.add(hunk.region)
 
     objects: dict[str, int] = {}
     def palette(entry: Area | Section) -> str:
@@ -205,10 +208,12 @@ def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
         if isinstance(entry, InputSection):
             color = color & 0x1F1FFF
             objects[entry.object] = objects.get(entry.object, color)
-            if entry in grew:
-                color = color | 0x00A000
-            elif entry in added:
+            if entry in added:
                 color = color | 0x00E000
+            elif entry in grew:
+                color = color | 0x00A000
+            elif entry in shrunk:
+                color = color | 0xA00000
         return f"#{color:06X}"
 
     write_svg(mapfile, svg_out, palette)
