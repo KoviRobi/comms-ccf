@@ -168,6 +168,9 @@ def compare(old_mapfile: MapFile, new_mapfile: MapFile) -> Diff:
 
 
 def md(diff: Diff, md_out: t.TextIO):
+    """
+    Outputs a markdown/yaml file.
+    """
     # Sort by size change so biggest is at top. But preserve implicit
     # hierarchy in the ordering, by grouping items
     for hunk in (
@@ -180,9 +183,9 @@ def md(diff: Diff, md_out: t.TextIO):
         if hunk.region.type == "area":
             md_out.write(f"### {hunk.change.capitalize()} {size}B due to {desc}\n\n")
         elif hunk.region.type == "output":
-            md_out.write(f"\n{hunk.change.capitalize()} {size}B due to {desc}\n\n")
+            md_out.write(f"\n- {hunk.change.capitalize()} {size}B due to {desc}:\n\n")
         elif hunk.region.type == "input":
-            md_out.write(f"- {hunk.change.capitalize()} {size}B due to {desc}\n")
+            md_out.write(f"  - {hunk.change.capitalize()} {size}B due to {desc}\n")
         else:
             assert f"Unknown region type {hunk.region.type}"
 
