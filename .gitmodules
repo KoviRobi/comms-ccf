@@ -1,4 +1,4 @@
-[submodule "FreeRTOS"]
+[submodule "FreeRTOS-Demo/FreeRTOS-Kernel"]
 	path = FreeRTOS-Demo/FreeRTOS-Kernel
 	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
 [submodule "recording/tmux-keylog"]
