@@ -168,17 +168,17 @@ structured data is necessary.
 I chose CBOR because it is easy to encode/decode into a compact format,
 supports many types (more than I end up using).
 
-[1text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
-[1bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
-[2text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-1-2.svg#area-FLASH-00000000-output-.text-00000000
-[2bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-1-2.svg#area-SRAM-20000000-output-.bss-20000164
-[3text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-2-3.svg#area-FLASH-00000000-output-.text-00000000
-[3bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-2-3.svg#area-SRAM-20000000-output-.bss-20000164
-[4text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-3-4.svg#area-FLASH-00000000-output-.text-00000000
-[4bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-3-4.svg#area-SRAM-20000000-output-.bss-20000164
-[5text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-4-5.svg#area-FLASH-00000000-output-.text-00000000
-[5bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-4-5.svg#area-SRAM-20000000-output-.bss-20000164
-[6text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-5-6.svg#area-FLASH-00000000-output-.text-00000000
-[6bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-5-6.svg#area-SRAM-20000000-output-.bss-20000164
-[7text]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-6-7.svg#area-FLASH-00000000-output-.text-00000000
-[7bss]: https://github.com/KoviRobi/comms-ccf/raw/main/FreeRTOS-Demo/misc/compare-6-7.svg#area-SRAM-20000000-output-.bss-20000164
+[1text]: https://kovirobi.github.io/comms-ccf/compare-0-1.svg#area-FLASH-00000000-output-.text-00000000
+[1bss]: https://kovirobi.github.io/comms-ccf/compare-0-1.svg#area-SRAM-20000000-output-.bss-20000164
+[2text]: https://kovirobi.github.io/comms-ccf/compare-1-2.svg#area-FLASH-00000000-output-.text-00000000
+[2bss]: https://kovirobi.github.io/comms-ccf/compare-1-2.svg#area-SRAM-20000000-output-.bss-20000164
+[3text]: https://kovirobi.github.io/comms-ccf/compare-2-3.svg#area-FLASH-00000000-output-.text-00000000
+[3bss]: https://kovirobi.github.io/comms-ccf/compare-2-3.svg#area-SRAM-20000000-output-.bss-20000164
+[4text]: https://kovirobi.github.io/comms-ccf/compare-3-4.svg#area-FLASH-00000000-output-.text-00000000
+[4bss]: https://kovirobi.github.io/comms-ccf/compare-3-4.svg#area-SRAM-20000000-output-.bss-20000164
+[5text]: https://kovirobi.github.io/comms-ccf/compare-4-5.svg#area-FLASH-00000000-output-.text-00000000
+[5bss]: https://kovirobi.github.io/comms-ccf/compare-4-5.svg#area-SRAM-20000000-output-.bss-20000164
+[6text]: https://kovirobi.github.io/comms-ccf/compare-5-6.svg#area-FLASH-00000000-output-.text-00000000
+[6bss]: https://kovirobi.github.io/comms-ccf/compare-5-6.svg#area-SRAM-20000000-output-.bss-20000164
+[7text]: https://kovirobi.github.io/comms-ccf/compare-6-7.svg#area-FLASH-00000000-output-.text-00000000
+[7bss]: https://kovirobi.github.io/comms-ccf/compare-6-7.svg#area-SRAM-20000000-output-.bss-20000164
