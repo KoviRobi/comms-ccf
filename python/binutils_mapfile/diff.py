@@ -208,7 +208,7 @@ def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
     objects: dict[str, int] = {}
     def palette(entry: Area | Section) -> str:
         color = random.randint(0, 0xFFFFFF)
-        if isinstance(entry, InputSection):
+        if isinstance(entry, Section):
             color = color & 0x1F1FFF
             objects[entry.object] = objects.get(entry.object, color)
             if entry in added:
