@@ -18,6 +18,7 @@
             pkgs.black
             pkgs.pyright
             pkgs.isort
+            pkgs.uv
             pkgs.python3
             pkgs.python3.pkgs.pytest
             pkgs.python3.pkgs.hypothesis
