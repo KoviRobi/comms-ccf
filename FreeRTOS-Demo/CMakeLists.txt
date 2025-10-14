@@ -58,7 +58,7 @@ add_custom_target(run
 )
 
 # For comparing sizes
-foreach(CCF_FEATURES RANGE 7)
+foreach(CCF_FEATURES RANGE 8)
     set(TARGET "FreeRTOS-Demo-${CCF_FEATURES}")
     add_executable("${TARGET}" EXCLUDE_FROM_ALL
         "$<TARGET_PROPERTY:FreeRTOS-Demo,SOURCES>"
@@ -78,7 +78,9 @@ foreach(CCF_FEATURES RANGE 7)
         LINK_LIBRARIES "$<TARGET_PROPERTY:FreeRTOS-Demo,LINK_LIBRARIES>"
     )
     target_compile_definitions("${TARGET}" PRIVATE
-        "CCF_FEATURES=${CCF_FEATURES}")
+        "CCF_FEATURES=${CCF_FEATURES}"
+        "$<$<VERSION_GREATER_EQUAL:${CCF_FEATURES},8>:INLINE_VTABLE>"
+    )
     list(APPEND DEMO_MEASURE "${TARGET}")
 endforeach()
 add_custom_target(FreeRTOS-Demo-measure ALL DEPENDS ${DEMO_MEASURE})
