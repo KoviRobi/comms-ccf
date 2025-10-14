@@ -34,17 +34,18 @@ async def amain():
     )
     args = parser.parse_args()
 
-    global rx, tx, transport, rpc
+    global rx, tx, iorpc
     rx, tx = await asyncio.open_connection(args.host, args.port)
     transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
     loop = asyncio.get_event_loop()
     background_tasks = BackgroundTasks(loop)
     channels = Channels(transport, loop)
+    io = Stdio()
     background_tasks.add(channels.loop)
-    rpc = Rpc(channels)
+    rpc = Rpc(channels, io)
 
     if args.log:
-        background_tasks.add(print_logs, channels)
+        background_tasks.add(print_logs, channels, io.print)
 
     while True:
         try:
@@ -67,7 +68,7 @@ async def amain():
         print("Exception in demo:", str(e) or repr(e))
 
     if args.repl:
-        await repl(Stdio(), locals)
+        await repl(io, locals)
 
 
 def quit(*args, **kwargs):

@@ -28,6 +28,13 @@
             pkgs.python3.pkgs.squarify
             pkgs.python3.pkgs.intervaltree
             pkgs.python3.pkgs.cxxfilt
+            pkgs.python3.pkgs.tkinter
+            pkgs.python3.pkgs.janus
+            pkgs.python3.pkgs.ipython
+            pkgs.python3.pkgs.pyside6
+            pkgs.python3.pkgs.qtconsole
+            pkgs.python3.pkgs.pyqtgraph
+            pkgs.python3.pkgs.pglive
           ]
           ++ pkgs.lib.optionals demo [
             # FreeRTOSDemo
