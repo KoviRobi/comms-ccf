@@ -16,6 +16,8 @@ project(comms-ccf CXX)
 # WIP TODO
 add_executable(itertools comms-ccf/itertools.cpp)
 
+add_executable(packetizer comms-ccf/packetizer.cpp)
+
 enable_testing()
 
 set(test_build_deps "")
