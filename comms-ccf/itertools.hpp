@@ -25,11 +25,12 @@ void isr()
 #include <iterator>
 #include <ranges>
 
+class End{};
+
 template<typename Value, typename B, typename E>
 class Split
 {
 public:
-    class End{};
     class Iterator
     {
     public:
@@ -37,15 +38,16 @@ public:
         using difference_type = ptrdiff_t;
 
         Iterator(Split * outer_) : outer(outer_) { }
-
-        Value & operator*() const
-        {
-            return *outer->begin_;
-        }
-        const Value & operator=(const Value & value) const
+        Iterator & operator*() const { return *this; }
+        Iterator operator++(int) { auto tmp = *this; ++*this; return tmp; }
+        const Iterator & operator=(const Value & value) const
         {
             outer->discard = value == outer->separator;
-            return outer->discard ? value : *outer->begin_ = value;
+            if (!outer->discard)
+            {
+                *outer->begin_ = value;
+            }
+            return *this;
         }
         Iterator & operator++()
         {
@@ -55,7 +57,6 @@ public:
             }
             return *this;
         }
-        Iterator operator++(int) { auto tmp = *this; ++*this; return tmp; }
 
         bool operator!=(const End &) const
         {
