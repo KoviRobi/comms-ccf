@@ -6,12 +6,14 @@ from __future__ import annotations
 
 import sys
 import typing as t
-from parser import MapFile
+from parser import Area, InputSection, MapFile, OutputSection
 from pathlib import Path
 from random import Random
 
 import utils
 from squarify import normalize_sizes, squarify
+
+Region = Area | OutputSection | InputSection
 
 random = Random(1234)
 
@@ -23,12 +25,13 @@ def random_palette(_) -> str:
 def svg(
     mapfile: MapFile,
     file: t.TextIO = sys.stdout,
-    palette=random_palette,
+    palette: t.Callable[[Region], str] = random_palette,
     width: int = 297,
     height: int = 210,
     area_overlay: bool = True,
     output_overlay: bool = True,
     input_overlay: bool = True,
+    extra_tooltip: None | t.Callable[[Region], None | str] = None,
 ):
     def indent(*args):
         return utils.indent(*args, level=2, file=file, strip=4)
@@ -78,6 +81,12 @@ def svg(
         area_desc += f" ({utils.binary_prefix(area_used)},"
         area_desc += f" {100*area_used/len(area):.2f}% used)"
 
+        extra_area_desc = extra_tooltip
+        if isinstance(extra_tooltip, t.Callable):
+            extra_area_desc = extra_tooltip(area)
+        if isinstance(extra_area_desc, str):
+            area_desc += "\n" + extra_area_desc
+
         output_normed = normalize_sizes(output_sizes, 1, 1)
         output_rects = list(zip(squarify(output_normed, 0, 0, 1, 1), sorted_outputs))
         indent(
@@ -105,6 +114,12 @@ def svg(
             )
             if output_section.fill > 0:
                 output_desc += f"\nfill: {output_section.fill:08}"
+
+            extra_output_desc = extra_tooltip
+            if isinstance(extra_tooltip, t.Callable):
+                extra_output_desc = extra_tooltip(output_section)
+            if isinstance(extra_output_desc, str):
+                output_desc += "\n" + extra_output_desc
 
             output_colour = palette(output_section)
             output_id = f"{area_id}-output-{output_name}-{output_section.address:08X}"
@@ -152,6 +167,12 @@ def svg(
                     input_desc += f"\nfill: {input_section.fill:08}"
                 for sym in input_section.symbols:
                     input_desc += f"\n{sym.name} 0x{sym.address:X} {sym.wildcard}"
+
+                extra_input_desc = extra_tooltip
+                if isinstance(extra_tooltip, t.Callable):
+                    extra_input_desc = extra_tooltip(input_section)
+                if isinstance(extra_input_desc, str):
+                    input_desc += "\n" + extra_input_desc
 
                 input_colour = palette(input_section)
                 input_id = f"{output_id}-input-{input_name}-{input_section.address:08X}"

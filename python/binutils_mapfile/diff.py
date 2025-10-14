@@ -194,30 +194,45 @@ def md(diff: Diff, md_out: t.TextIO):
 def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
     random = Random(1234)
 
-    added = set()
-    grew = set()
-    shrunk = set()
+    added = dict[Region, int]()
+    grew = dict[Region, int]()
+    shrunk = dict[Region, int]()
 
     for hunk in diff:
         if hunk.change == Change.Add:
-            added.add(hunk.region)
+            added[hunk.region] = hunk.value
         elif hunk.change == Change.Increase:
-            grew.add(hunk.region)
+            grew[hunk.region] = hunk.value
         elif hunk.change == Change.Decrease:
-            shrunk.add(hunk.region)
+            shrunk[hunk.region] = hunk.value
 
     objects: dict[Path, int] = {}
-    def palette(entry: Area | Section) -> str:
+
+    def palette(region: Region) -> str:
         color = random.randint(0, 0xFFFFFF)
-        if isinstance(entry, Section):
+        if isinstance(region, Section):
             color = color & 0x1F1FFF
-            objects[entry.object] = objects.get(entry.object, color)
-            if entry in added:
+            objects[region.object] = objects.get(region.object, color)
+            if region in added:
                 color = color | 0x00E000
-            elif entry in grew:
+            elif region in grew:
                 color = color | 0x00A000
-            elif entry in shrunk:
+            elif region in shrunk:
                 color = color | 0xA00000
         return f"#{color:06X}"
 
-    write_svg(mapfile, svg_out, palette)
+    def tooltip(region: Region) -> str:
+        add = added.get(region)
+        increase = grew.get(region)
+        decrease = shrunk.get(region)
+        if add:
+            size = utils.binary_prefix(add)
+            return f"Newly added {size}B"
+        elif increase:
+            size = utils.binary_prefix(increase)
+            return f"Grew by {size}B"
+        elif decrease:
+            size = utils.binary_prefix(decrease)
+            return f"Shrunk by {size}B"
+
+    write_svg(mapfile, svg_out, palette=palette, extra_tooltip=tooltip)
