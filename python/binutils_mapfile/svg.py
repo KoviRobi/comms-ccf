@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import sys
 import typing as t
-from parser import Area, InputSection, MapFile, OutputSection
 from pathlib import Path
 from random import Random
 
-import utils
 from squarify import normalize_sizes, squarify
+
+import binutils_mapfile.utils as utils
+from binutils_mapfile.parser import Area, InputSection, MapFile, OutputSection
 
 Region = Area | OutputSection | InputSection
 

@@ -8,9 +8,9 @@ from __future__ import annotations
 import sys
 import typing as t
 from json import dumps
-from parser import MapFile, Section
 
-import utils
+import binutils_mapfile.utils as utils
+from binutils_mapfile.parser import MapFile, Section
 
 
 def format_section_info(container_size: int, section: Section) -> str:

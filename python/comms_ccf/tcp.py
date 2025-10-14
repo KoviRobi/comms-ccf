@@ -1,34 +1,30 @@
 #!/usr/bin/env python3
 
 """
-An alternative to the TCP transport, it wraps the STDIO of a subprocess.
+Connects to a TCP Comms-CCF socket
 
-TODO: De-duplicate along with tcp.py
+TODO: De-duplicate along with wrap_subprocess.py
 """
 
 import asyncio
+import signal
 import sys
 import time
 from argparse import ArgumentParser
-from asyncio.subprocess import PIPE
-from pathlib import Path
-from shlex import quote
-from shutil import which
 
-from background import BackgroundTasks
-from channel import Channels
-from log import print_logs
-from repl import Stdio, repl
-from rpc import Rpc
-from transport import StreamTransport
+from comms_ccf.background import BackgroundTasks
+from comms_ccf.channel import Channels
+from comms_ccf.hexdump import hexdump
+from comms_ccf.log import print_logs
+from comms_ccf.repl import Stdio, repl
+from comms_ccf.rpc import Rpc
+from comms_ccf.transport import StreamTransport
 
 
 async def amain():
     parser = ArgumentParser()
-    parser.add_argument("executable", type=Path, help="Executable to wrap")
-    parser.add_argument(
-        "arguments", type=str, nargs="*", help="Arguments to the executable"
-    )
+    parser.add_argument("--host", default="localhost", help="Host to connect to")
+    parser.add_argument("--port", default=4321, type=int, help="Port to connect to")
     parser.add_argument("--verbose", "-v", action="store_true", help="Dump packets")
     parser.add_argument(
         "--no-repl", "-n", dest="repl", action="store_false", help="Only try example"
@@ -38,17 +34,9 @@ async def amain():
     )
     args = parser.parse_args()
 
-    executable: Path = Path(which(args.executable))
-    assert executable.exists(), f"File {quote(str(executable))} doesn't exist"
-
-    proc = await asyncio.create_subprocess_exec(
-        executable, *args.arguments, stdin=PIPE, stdout=PIPE
-    )
-    assert proc.stdin is not None
-    assert proc.stdout is not None
-    transport = StreamTransport(
-        proc.stdout, proc.stdin, sys.stderr if args.verbose else None
-    )
+    global rx, tx, transport, rpc
+    rx, tx = await asyncio.open_connection(args.host, args.port)
+    transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
     loop = asyncio.get_event_loop()
     background_tasks = BackgroundTasks(loop)
     channels = Channels(transport, loop)
@@ -65,8 +53,10 @@ async def amain():
         except Exception as e:
             print("Failed to discover RPC:", str(e) or repr(e))
             time.sleep(0.2)
+
     locals = {k: v for k, v in rpc.methods().items()}
     locals["help"] = rpc.help
+    locals["hexdump"] = hexdump
     locals["dir"] = dir
 
     print("Use help(name=None) for discovered methods")
@@ -79,8 +69,18 @@ async def amain():
     if args.repl:
         await repl(Stdio(), locals)
 
-    proc.terminate()
+
+def quit(*args, **kwargs):
+    sys.stdin.close()
+    print("Press Ctrl-D (or any other key) to exit")
+    exit()
+
+
+def main():
+    # Make keyboard interrupt quit AsyncIO
+    signal.signal(signal.SIGINT, quit)
+    asyncio.run(amain())
 
 
 if __name__ == "__main__":
-    asyncio.run(amain())
+    main()

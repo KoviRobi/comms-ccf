@@ -14,7 +14,7 @@ using a queue instead of futures.
 from asyncio import Future, IncompleteReadError, get_event_loop, shield, wait_for
 from enum import IntEnum
 
-from transport import DEFAULT_TIMEOUT, Transport
+from comms_ccf.transport import DEFAULT_TIMEOUT, Transport
 
 
 class Channel(IntEnum):

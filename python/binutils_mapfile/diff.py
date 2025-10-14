@@ -7,12 +7,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from itertools import groupby
-from parser import Area, InputSection, MapFile, OutputSection, Section
 from pathlib import Path
 from random import Random
 
-import utils
-from svg import svg as write_svg
+import binutils_mapfile.utils as utils
+from binutils_mapfile.parser import Area, InputSection, MapFile, OutputSection, Section
+from binutils_mapfile.svg import svg as write_svg
 
 
 def shorten_with_details(section_or_area, parent_prefix: str = ""):
@@ -221,7 +221,7 @@ def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
                 color = color | 0xA00000
         return f"#{color:06X}"
 
-    def tooltip(region: Region) -> str:
+    def tooltip(region: Region) -> str | None:
         add = added.get(region)
         increase = grew.get(region)
         decrease = shrunk.get(region)

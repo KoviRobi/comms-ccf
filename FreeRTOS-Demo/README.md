@@ -19,7 +19,7 @@ cmake --workflow --preset=run-debug
 ```
 and then you can run
 ```
-python ../python/tcp.py
+uv run comms-ccf-tcp
 ```
 
 ## Resource use

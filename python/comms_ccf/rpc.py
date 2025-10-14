@@ -11,8 +11,9 @@ from random import randint
 from textwrap import indent
 
 from cbor import dumps, loads
-from channel import Channel, Channels
-from transport import DEFAULT_TIMEOUT
+
+from comms_ccf.channel import Channel, Channels
+from comms_ccf.transport import DEFAULT_TIMEOUT
 
 
 class Rpc:
@@ -22,7 +23,9 @@ class Rpc:
         self._doc = pydoc.TextDoc()
         self._seqNo = seqNo
 
-    async def __call__(self, n: int, args: t.Any, timeout: float = DEFAULT_TIMEOUT) -> t.Any:
+    async def __call__(
+        self, n: int, args: t.Any, timeout: float = DEFAULT_TIMEOUT
+    ) -> t.Any:
         deadline = time.time() + timeout
         seqNo = self._seqNo
         self._seqNo = (self._seqNo + 1) & 0xFF

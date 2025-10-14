@@ -1,0 +1,29 @@
+[project]
+name = "comms-ccf"
+version = "0.1.0"
+authors = [
+    { name = "Kovacsics Robert", email = "kovirobi@gmail.com" }
+]
+description = "Python tools for the comms-ccf project"
+readme = "README.md"
+requires-python = ">=3.13"
+
+[dependency-groups]
+comms_ccf = [ 'cobs', 'cbor', 'fnv-hash-fast' ]
+binutils_mapfile = [ 'cxxfilt', 'intervaltree', 'squarify' ]
+
+[build-system]
+requires = ["setuptools"]
+
+[tool.setuptools]
+py-modules = [ 'comms_ccf', 'binutils_mapfile' ]
+
+[project.scripts]
+binutils-mapfile = "binutils_mapfile.__main__:main"
+comms-ccf-stdio = "comms_ccf.wrap_subprocess:main"
+comms-ccf-tcp = "comms_ccf.tcp:main"
+hexdump = "comms_ccf.hexdump:main"
+
+[project.urls]
+Homepage = "https://github.com/KoviRobi/comms-ccf"
+Issues = "https://github.com/KoviRobi/comms-ccf/issues"

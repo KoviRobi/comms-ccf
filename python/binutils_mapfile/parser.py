@@ -15,7 +15,8 @@ from pathlib import Path
 
 from cxxfilt import InvalidName, demangle
 from intervaltree.intervaltree import Interval, IntervalTree
-from utils import IterWithPutBack
+
+from binutils_mapfile.utils import IterWithPutBack
 
 HEX_RE = re.compile(r"\s*(0x[0-9a-fA-F]+)\b")
 RELAXED_RE = re.compile(r"\s*(0x[0-9a-fA-F]+)\s+\(size before relaxing\)")

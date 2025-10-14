@@ -61,7 +61,7 @@ add_build_and_test(
     NAME rpc_demo
     DEPENDS rpc
     COMMAND
-        "${CMAKE_CURRENT_LIST_DIR}/python/wrap_subprocess.py"
+        uv run comms-ccf-stdio
         --verbose
         --no-repl
         $<TARGET_FILE:rpc>
@@ -81,7 +81,7 @@ add_build_and_test(
     NAME rpc_debug_demo
     DEPENDS rpc_debug
     COMMAND
-        "${CMAKE_CURRENT_LIST_DIR}/python/wrap_subprocess.py"
+        uv run comms-ccf-stdio
         --verbose
         --no-repl
         $<TARGET_FILE:rpc_debug>

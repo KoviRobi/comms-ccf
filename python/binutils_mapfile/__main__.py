@@ -6,14 +6,14 @@ import re
 import sys
 from argparse import ArgumentParser
 from glob import glob
-from parser import MapFile
 from pathlib import Path
 
-from diff import compare
-from diff import md as diff_md
-from diff import svg as diff_svg
-from svg import svg
-from yaml import diffable_format
+from binutils_mapfile.diff import compare
+from binutils_mapfile.diff import md as diff_md
+from binutils_mapfile.diff import svg as diff_svg
+from binutils_mapfile.parser import MapFile
+from binutils_mapfile.svg import svg
+from binutils_mapfile.yaml import diffable_format
 
 
 def extract_number(s: str) -> tuple[tuple[int, ...], str]:

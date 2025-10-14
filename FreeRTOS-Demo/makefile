@@ -1,4 +1,5 @@
 p ?= minsizerel
+
 .PHONY: all run compare
 all:
 	cmake --preset $p
@@ -19,8 +20,8 @@ compare:
 	echo '- Files looked at (in build/$p):' >> misc/compare.md
 	printf '  - %s\n' \
 	    build/$p/FreeRTOS-Demo-*.map        >> misc/compare.md
-	python ../python/binutils_mapfile \
-	    build/$p/FreeRTOS-Demo-*.map  \
-	    --svg misc/compare.svg        \
+	uv run binutils-mapfile          \
+	    build/$p/FreeRTOS-Demo-*.map \
+	    --svg misc/compare.svg       \
 	    --yaml misc/compare.yaml
 	cat misc/compare.*-*.yaml               >> misc/compare.md

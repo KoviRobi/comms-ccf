@@ -4,15 +4,17 @@ Simple background logging task
 
 from enum import Enum, auto
 
-from channel import Channels, Channel
-
 from cobs.cobs import DecodeError
+
+from comms_ccf.channel import Channels, Channel
+
 
 class LogLevel(Enum):
     Debug = 0
     Info = auto()
     Warn = auto()
     Error = auto()
+
 
 async def print_logs(channels: Channels):
     channels.open_channel(Channel.Log)

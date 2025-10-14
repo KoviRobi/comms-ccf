@@ -65,13 +65,10 @@ foreach(CCF_FEATURES RANGE 7)
     )
      add_custom_command(TARGET "${TARGET}"
         POST_BUILD
-        COMMAND python
-            "${CMAKE_CURRENT_LIST_DIR}/../python/binutils_mapfile"
+        COMMAND uv run
+            binutils-mapfile
             "$<TARGET_FILE:${TARGET}>.map"
             --yaml "$<TARGET_FILE:${TARGET}>.map.yaml"
-        COMMAND python
-            "${CMAKE_CURRENT_LIST_DIR}/../python/binutils_mapfile"
-            "$<TARGET_FILE:${TARGET}>.map"
             --svg "$<TARGET_FILE:${TARGET}>.map.svg"
         VERBATIM
         COMMAND_EXPAND_LISTS
