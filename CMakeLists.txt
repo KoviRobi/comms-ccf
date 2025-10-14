@@ -13,6 +13,9 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(comms-ccf CXX)
 
+# WIP TODO
+add_executable(itertools comms-ccf/itertools.cpp)
+
 enable_testing()
 
 set(test_build_deps "")
