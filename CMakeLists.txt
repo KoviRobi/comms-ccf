@@ -16,7 +16,8 @@ project(comms-ccf CXX)
 # WIP TODO
 add_executable(itertools comms-ccf/itertools.cpp)
 
-add_executable(packetizer comms-ccf/packetizer.cpp)
+add_executable(packetizer comms-ccf/packetizer.cpp comms-ccf/cobs.cpp)
+target_include_directories(packetizer PUBLIC comms-ccf/ test/)
 
 enable_testing()
 
