@@ -7,3 +7,9 @@
 [submodule "recording/tmux-keylog"]
 	path = recording/tmux-keylog
 	url = https://github.com/KoviRobi/tmux-keylog.git
+[submodule "python/TkConsole"]
+	path = python/purelibs/TkConsole
+	url = https://github.com/eftalgezer/TkConsole.git
+[submodule "python/aiotkinter"]
+	path = python/purelibs/aiotkinter
+	url = https://github.com/montag451/aiotkinter.git
