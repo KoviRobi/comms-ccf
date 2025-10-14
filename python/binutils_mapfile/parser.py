@@ -78,7 +78,7 @@ class ArchiveMembers:
         # by said object
         self.archives: dict[str, ArchiveMembers.Reference] = {}
 
-    def feed(self, line: str, lines: LINES_WITH_LINENO):
+    def feed(self, root: Path, line: str, lines: LINES_WITH_LINENO):
         popped = None
         if line is None or line == "":
             return
@@ -120,7 +120,7 @@ class Section:
     name: str
     address: int
     size: int
-    object: str
+    object: Path
     fill: int = 0
     type: str = field(init=False, default="unknown")
 
@@ -144,7 +144,7 @@ class Section:
     T = t.TypeVar("T", bound="Section")
 
     @classmethod
-    def parse(cls: type[T], name: str, line: str, lines: LINES_WITH_LINENO) -> T:
+    def parse(cls: type[T], root: Path, name: str, line: str, lines: LINES_WITH_LINENO) -> T:
         popped = None
         try:
             if len(name) >= SECTION_NAME_LEN - 1:
@@ -161,7 +161,15 @@ class Section:
             line = line[SECTION_NAME_LEN:]
             addr, line = consume_hex(line)
             size, line = consume_hex(line)
-            object = line.lstrip()
+            object = Path(line.lstrip())
+            if object.anchor:
+                object = object.resolve()
+            else:
+                object = (root / object).resolve()
+            try:
+                object = object.relative_to(Path.cwd())
+            except ValueError:
+                pass
             return cls(name.strip(), addr, size, object)
         except:
             if popped is not None:
@@ -205,12 +213,12 @@ class Discards:
     def __init__(self) -> None:
         self.discards = {}
 
-    def feed(self, line: str, lines: LINES_WITH_LINENO):
+    def feed(self, root: Path, line: str, lines: LINES_WITH_LINENO):
         if line is None or line == "":
             return
         elif line[0] == " " and (m := SECTION_NAME_RE.match(line[1:])):
             name = " " + m[1]  # For constant columns
-            discard = DiscardedSection.parse(name, line, lines)
+            discard = DiscardedSection.parse(root, name, line, lines)
             self.discards[discard.name] = discard
 
 
@@ -270,7 +278,7 @@ class MemoryConfiguration:
         self.header: None | list[str] = None
         self.areas = []
 
-    def feed(self, line: str, _lines: LINES_WITH_LINENO):
+    def feed(self, root: Path, line: str, _lines: LINES_WITH_LINENO):
         if not line:
             return
         if self.header is None:
@@ -314,7 +322,7 @@ class MemoryMap:
     def __init__(self) -> None:
         self.sections: list[_WipOutputSection] = []
 
-    def feed(self, line: str, lines: LINES_WITH_LINENO):
+    def feed(self, root: Path, line: str, lines: LINES_WITH_LINENO):
         if line is None or line == "":
             return
         elif any(
@@ -325,10 +333,10 @@ class MemoryMap:
         elif line.startswith("/DISCARD/"):
             return
         elif m := SECTION_NAME_RE.match(line):
-            self.new_output_section(m[1], line, lines)
+            self.new_output_section(root, m[1], line, lines)
         elif line[0] == " " and (m := SECTION_NAME_RE.match(line[1:])):
             name = " " + m[1]  # For constant columns
-            self.new_input_section(name, line, lines)
+            self.new_input_section(root, name, line, lines)
         elif m := RELAXED_RE.match(line):
             size = int(m[1], 0)
             self.relaxed_symbol(size)
@@ -353,11 +361,11 @@ class MemoryMap:
         else:
             print("UNKNOWN       ", line)
 
-    def new_output_section(self, name: str, line: str, lines: LINES_WITH_LINENO):
+    def new_output_section(self, root: Path, name: str, line: str, lines: LINES_WITH_LINENO):
         "See binutils/ld/ldlang.c print_output_section_statement"
         try:
             self.sections.append(
-                _WipOutputSection(OutputSection.parse(name, line, lines))
+                _WipOutputSection(OutputSection.parse(root, name, line, lines))
             )
         except ValueError:
             # Output sections without addresses are possible if they
@@ -369,14 +377,14 @@ class MemoryMap:
         "See binutils/ld/ldlang.c print_wild_statement"
         self._wildcard = line.strip()
 
-    def new_input_section(self, section: str, line: str, lines: LINES_WITH_LINENO):
+    def new_input_section(self, root: Path, section: str, line: str, lines: LINES_WITH_LINENO):
         "See binutils/ld/ldlang.c print_intput_statement"
         assert (
             self.sections != []
         ), "Expecting an output section before an input section"
         input_sections = self.sections[-1].inputs
         input_sections.append(
-            _WipInputSection(InputSection.parse(section, line, lines))
+            _WipInputSection(InputSection.parse(root, section, line, lines))
         )
 
     def relaxed_symbol(self, _size: int):
@@ -425,6 +433,7 @@ class MapFile:
     @classmethod
     def parse(cls, file_like: t.TextIO) -> MapFile:
         self = cls()
+        root = Path(file_like.name).parent
         archive_members = ArchiveMembers()
         discards = Discards()
         memory_configuration = MemoryConfiguration()
@@ -451,7 +460,7 @@ class MapFile:
                 # TODO: Verify
                 break
             if parser is not None:
-                parser.feed(line, lines)
+                parser.feed(root, line, lines)
         return MapFile(
             archive_members=archive_members.archives,
             discards=discards.discards,

@@ -133,14 +133,13 @@ def svg(
                 input_desc = input_short
                 if input_short != input_name:
                     input_desc += "\n" + input_name
-                path = Path(input_section.object).resolve()
-                if input_section.object != path.name:
-                    input_desc += "\n"
-                    if input_name != path.name:
-                        input_desc += path.name + " "
-                    input_desc += "from " + str(path.parent)
+                input_desc += "\n"
+                if len(input_section.object.parts) > 1:
+                    if input_name != input_section.object.name:
+                        input_desc += input_section.object.name + " "
+                    input_desc += "from " + str(input_section.object.parent)
                 else:
-                    input_desc += "\n" + input_section.object
+                    input_desc += str(input_section.object)
                 input_desc += f"\n0x{input_section.address:08X}"
                 input_desc += f" + 0x{len(input_section):08X}"
                 input_desc += (

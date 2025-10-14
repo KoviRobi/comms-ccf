@@ -205,7 +205,7 @@ def svg(mapfile: MapFile, diff: Diff, svg_out: t.TextIO):
         elif hunk.change == Change.Decrease:
             shrunk.add(hunk.region)
 
-    objects: dict[str, int] = {}
+    objects: dict[Path, int] = {}
     def palette(entry: Area | Section) -> str:
         color = random.randint(0, 0xFFFFFF)
         if isinstance(entry, Section):
