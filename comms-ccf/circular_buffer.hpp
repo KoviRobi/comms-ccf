@@ -167,10 +167,6 @@ public:
     /// `dropping()`, then `reset_dropped()` will drop the partial packet.
     void notify()
     {
-        // Since we are about to notify of a partial packet, we want to
-        // call `reset_dropped` to make sure it is treated as a full
-        // packet.
-        reset_dropped();
         size_t size = unnotified();
         for (size_t i = sizeBytes; i > 0; --i)
         {
@@ -178,6 +174,7 @@ public:
             size >>= 8;
         }
         notified = write;
+        dropped = false;
     }
 
     class Frame;
