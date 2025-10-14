@@ -49,10 +49,11 @@ async def amain():
         background_tasks = BackgroundTasks(loop)
         channels = Channels(transport, loop)
         background_tasks.add(channels.loop)
-        rpc = Rpc(channels)
+        io = Stdio()
+        rpc = Rpc(channels, io)
 
         if args.log:
-            background_tasks.add(print_logs, channels)
+            background_tasks.add(print_logs, channels, io)
 
         while True:
             try:
@@ -76,7 +77,7 @@ async def amain():
                 print("Exception in demo:", str(e) or repr(e))
 
         if args.repl:
-            await repl(Stdio(), locals)
+            await repl(io, locals)
         background_tasks.suppress_exceptions = True
 
 

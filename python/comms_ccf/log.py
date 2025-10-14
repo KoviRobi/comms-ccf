@@ -3,6 +3,7 @@ Simple background logging task
 """
 
 from enum import Enum, auto
+import typing as t
 
 from cobs.cobs import DecodeError
 
@@ -16,7 +17,7 @@ class LogLevel(Enum):
     Error = auto()
 
 
-async def print_logs(channels: Channels):
+async def print_logs(channels: Channels, output: t.Callable[[str, int, str], t.Awaitable]):
     channels.open_channel(Channel.Log)
     while True:
         try:
@@ -26,6 +27,6 @@ async def print_logs(channels: Channels):
             level = data[0] >> 5
             module = data[0] & 0x1F
             msg = data[1:]
-            print("Log:", LogLevel(level).name, module, msg.decode())
+            await output(LogLevel(level).name, module, msg.decode())
         except (TimeoutError, DecodeError):
             pass
