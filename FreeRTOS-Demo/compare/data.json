@@ -22,5 +22,9 @@
   },
   {
     "summary": "Add test log task"
+  },
+  {
+    "summary": "Inline vtable",
+    "defines": "INLINE_VTABLE"
   }
 ]
