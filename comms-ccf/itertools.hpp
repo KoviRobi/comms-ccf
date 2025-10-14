@@ -2,97 +2,118 @@
 
 # Iterator utility tools
 
-This contains some tools for working with iterators.
+This gives us some utility functions, to be able to use output iterators, fed
+from the interrupt, into a buffer, instead of input iterators. Compare the
+following using output iterator, from the ISR
 
-## Buffer up to given size
-
-This allows us to buffer the input up to the given size, so that we can read it
-back.
+```cpp
+void isr()
+{
+    static CircularBuffer<uint8_t, MAX_PKT_SIZE> buf;
+    static auto it =
+        Split(0) >>=
+        Transform(Cobs::Decoder::Out) >>=
+        Transform(return std::back_inserter(buf));
+}
+```
 
 */
 
 #include <stddef.h>
-#include <stdint.h>
+#include <stdio.h>
 
-#include <array>
 #include <iterator>
 #include <ranges>
 
-template<typename Range, size_t Size>
-class Buffer : std::ranges::view_interface<Buffer<Range, Size>>
+template<typename Value, typename B, typename E>
+class Split
 {
 public:
-    using difference_type = ptrdiff_t;
-    using value_type = uint8_t;
-
+    class End{};
     class Iterator
     {
     public:
-        using difference_type = Buffer::difference_type;
-        using value_type = Buffer::value_type;
-        value_type operator*() const;
+        using value_type = Value;
+        using difference_type = ptrdiff_t;
 
-        /// Forward iterator
-        Iterator & operator++();
+        Iterator(Split * outer_) : outer(outer_) { }
+
+        Value & operator*() const
+        {
+            return *outer->begin_;
+        }
+        const Value & operator=(const Value & value) const
+        {
+            outer->discard = value == outer->separator;
+            return outer->discard ? value : *outer->begin_ = value;
+        }
+        Iterator & operator++()
+        {
+            if (!outer->discard)
+            {
+                ++outer->begin_;
+            }
+            return *this;
+        }
         Iterator operator++(int) { auto tmp = *this; ++*this; return tmp; }
-        bool operator==(const Iterator &) const;
 
-        /// Backwards to make it a bidirectional iterator
-        Iterator & operator--();
-        Iterator operator--(int) { auto tmp = *this; --*this; return tmp; }
+        bool operator!=(const End &) const
+        {
+            return *outer != outer->end() && !outer->discard;
+        }
 
-        /// Random access iterator
-        Iterator & operator+=(int);
-        Iterator & operator-=(int);
-        Iterator operator+(difference_type) const;
-        difference_type operator-(const Iterator &) const;
-        Iterator operator-(difference_type) const;
-        int operator<=>(const Iterator &) const;
-
-        // The warning is for porting old code, this is not relevant here.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-template-friend"
-        friend Iterator operator+(const Iterator::difference_type, const Iterator &);
-#pragma GCC diagnostic pop
-
-        value_type operator[](int) const;
+        Iterator & begin() { return *this; }
+        End end() { return {}; }
 
     private:
-        const Buffer * buf = nullptr;
-        difference_type index = 0;
+        Split * outer;
     };
 
-    // template<std::ranges::viewable_range Arg>
-    template<typename Arg>
-    Buffer(Arg && arg) : range(std::forward<Arg>(arg)) { }
+    using value_type = Iterator;
+    using difference_type = ptrdiff_t;
 
-    Iterator begin() const
+    Split(Value && separator_, B begin, E end)
+        : separator(separator_), begin_(begin), end_(end) { }
+
+    template<std::ranges::viewable_range Rng>
+    Split(Value && separator_, Rng && range)
+        : separator(separator_),
+          begin_(std::ranges::begin(std::forward<Rng>(range))),
+          end_(std::ranges::end(std::forward<Rng>(range)))
     {
-        if (index < Size)
-        {
-            return Iterator(this, 0);
-        }
-        else
-        {
-            return Iterator(this, (index + 1) % Size);
-        }
     }
-    Iterator end() const { return Iterator(this, index % Size); }
 
-    Buffer & operator++() { index++; return *this; }
-    Buffer operator++(int) { auto tmp = *this; ++*this; return tmp; }
-    value_type & operator*() { return buf[index]; }
+    Iterator operator*() { return Iterator(this); }
+    Split operator++(int) { auto tmp = *this; ++*this; return tmp; }
+    Split & operator++()
+    {
+        if (!discard)
+        {
+            ++begin_;
+        }
+        return *this;
+    }
+
+    bool operator!=(const End &) const
+    {
+        return begin_ != end_;
+    }
+
+    Split & begin() { return *this; }
+    End end() { return {}; }
 
 private:
-    Range range;
-    difference_type index = 0;
-    std::array<value_type, Size> buf = {};
+    Value separator;
+    B begin_;
+    E end_;
+    bool discard = false;
 };
+static_assert(std::output_iterator<Split<char, char*, char*>, char>);
+static_assert(
+    std::output_iterator<Split<char, char*, char*>::Iterator, char>
+);
 
-/*
-template<std::ranges::viewable_range Range, size_t Size>
-Buffer<Range, Size>(Range && range) -> Buffer<std::ranges::views::all_t<Range>, Size>;
-*/
-
-static_assert(std::output_iterator<Buffer<uint8_t*, 256>, uint8_t>);
-static_assert(std::random_access_iterator<Buffer<uint8_t*, 256>::Iterator>);
+class Transform
+{
+public:
+};
