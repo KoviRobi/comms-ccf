@@ -144,7 +144,9 @@ class Section:
     T = t.TypeVar("T", bound="Section")
 
     @classmethod
-    def parse(cls: type[T], root: Path, name: str, line: str, lines: LINES_WITH_LINENO) -> T:
+    def parse(
+        cls: type[T], root: Path, name: str, line: str, lines: LINES_WITH_LINENO
+    ) -> T:
         popped = None
         try:
             if len(name) >= SECTION_NAME_LEN - 1:
@@ -361,7 +363,9 @@ class MemoryMap:
         else:
             print("UNKNOWN       ", line)
 
-    def new_output_section(self, root: Path, name: str, line: str, lines: LINES_WITH_LINENO):
+    def new_output_section(
+        self, root: Path, name: str, line: str, lines: LINES_WITH_LINENO
+    ):
         "See binutils/ld/ldlang.c print_output_section_statement"
         try:
             self.sections.append(
@@ -377,7 +381,9 @@ class MemoryMap:
         "See binutils/ld/ldlang.c print_wild_statement"
         self._wildcard = line.strip()
 
-    def new_input_section(self, root: Path, section: str, line: str, lines: LINES_WITH_LINENO):
+    def new_input_section(
+        self, root: Path, section: str, line: str, lines: LINES_WITH_LINENO
+    ):
         "See binutils/ld/ldlang.c print_intput_statement"
         assert (
             self.sections != []

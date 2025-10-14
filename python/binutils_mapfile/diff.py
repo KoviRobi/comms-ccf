@@ -41,6 +41,7 @@ Region = Area | OutputSection | InputSection
 @dataclass(frozen=True)
 class Hunk:
     """One item of a diff, name comes from `diff` tool"""
+
     region: Region
     change: Change
     value: int

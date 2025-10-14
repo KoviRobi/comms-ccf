@@ -59,7 +59,9 @@ def main():
                 if diff is not None:
                     yaml_file = args.yaml.with_suffix(f".{n-1}-{n}{args.yaml.suffix}")
                     with yaml_file.open("wt") as yaml_out:
-                        yaml_out.write(f"## Comparing {mapfiles[n-1]} to {mapfiles[n]}\n\n")
+                        yaml_out.write(
+                            f"## Comparing {mapfiles[n-1]} to {mapfiles[n]}\n\n"
+                        )
                         diff_md(diff, yaml_out)
             if args.svg:
                 svg_file: Path = args.svg
