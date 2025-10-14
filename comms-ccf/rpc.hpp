@@ -65,15 +65,15 @@ struct Type<std::tuple<Ts...>>
     };
 };
 
-class AbstractCall
+class BaseCall
 {
 public:
-    virtual bool schema(Cbor::Sequence<Cbor::Major::Array> & seq) const = 0;
-    virtual bool call(std::span<uint8_t> & args, std::span<uint8_t> & ret) const = 0;
+    bool (*schema)(const BaseCall & this_, Cbor::Sequence<Cbor::Major::Array> & seq);
+    bool (*call)(const BaseCall & this_, std::span<uint8_t> & args, std::span<uint8_t> & ret);
 };
 
 template<typename Ret, typename... Args>
-class Call : public AbstractCall
+class Call : public BaseCall
 {
 public:
     using Fun = Ret (*)(Args...);
@@ -85,23 +85,31 @@ public:
         const char * doc_,
         std::array<const char *, sizeof...(Args)> argNames_,
         Fun ptr_)
-        : name(name_),
+        : BaseCall
+          {
+              // Note: Function arguments are normally contravariant
+              // but in this case the `this_` are const so it is safe
+              // (and all other arguments match).
+              .schema = reinterpret_cast<decltype(BaseCall::schema)>(reinterpret_cast<void *>(&schema)),
+              .call = reinterpret_cast<decltype(BaseCall::call)>(reinterpret_cast<void *>(&call)),
+          },
+          name(name_),
           doc(doc_),
           argNames(argNames_),
           ptr(ptr_) { }
 
-    bool schema(Cbor::Sequence<Cbor::Major::Array> & seq) const override
+    static bool schema(const Call & this_, Cbor::Sequence<Cbor::Major::Array> & seq)
     {
         Cbor::Sequence<Cbor::Major::Array> subseq(seq, 3 + 2 * sizeof...(Args));
         return
-            subseq.encode(std::string_view(name)) &&
-            subseq.encode(std::string_view(doc)) &&
+            subseq.encode(std::string_view(this_.name)) &&
+            subseq.encode(std::string_view(this_.doc)) &&
             subseq.encode(static_cast<std::string_view>(Type<Return>::python)) &&
             [&]<size_t... Idx>(std::index_sequence<Idx...>)
             {
                 return (
                     (
-                        subseq.encode(std::string_view(argNames[Idx])) &&
+                        subseq.encode(std::string_view(this_.argNames[Idx])) &&
                         subseq.encode(static_cast<std::string_view>(
                             Type<std::tuple_element_t<Idx, ArgsTup>>::python))
                     ) &&
@@ -111,9 +119,9 @@ public:
             subseq.as_expected();
     }
 
-    bool call(std::span<uint8_t> & args, std::span<uint8_t> & ret) const override
+    static bool call(const Call & this_, std::span<uint8_t> & args, std::span<uint8_t> & ret)
     {
-        if (ptr == nullptr)
+        if (this_.ptr == nullptr)
         {
             debugf(WARN "function ptr is null, ignoring call" END LOGLEVEL_ARGS);
             return false;
@@ -127,8 +135,8 @@ public:
         auto argsTup = Cbor::Cbor<ArgsTup>::decode(args);
         if (argsTup)
         {
-            debugf(DEBUG "function is %p" END LOGLEVEL_ARGS, ptr);
-            auto retVal = Cbor::WrapVoid<Ret, Cbor::Undefined>{ptr, *argsTup};
+            debugf(DEBUG "function is %p" END LOGLEVEL_ARGS, this_.ptr);
+            auto retVal = Cbor::WrapVoid<Ret, Cbor::Undefined>{this_.ptr, *argsTup};
             return Cbor::Cbor<Ret>::encode(retVal.value, ret);
         }
         return false;
@@ -149,9 +157,9 @@ public:
       calls{
           [&]<size_t... Idx>(std::index_sequence<Idx...>)
           {
-              return std::array<std::reference_wrapper<AbstractCall>, sizeof...(Calls)>{
-                  (std::reference_wrapper<AbstractCall>{
-                  *static_cast<AbstractCall *>(&std::get<Idx>(tuple))})...
+              return std::array<std::reference_wrapper<BaseCall>, sizeof...(Calls)>{
+                  (std::reference_wrapper<BaseCall>{
+                  *static_cast<BaseCall *>(&std::get<Idx>(tuple))})...
               };
           }(std::index_sequence_for<Calls...>{})
       } { }
@@ -161,7 +169,7 @@ public:
         Cbor::Sequence<Cbor::Major::Array> seq(buf, sizeof...(Calls));
         for (auto & c : calls)
         {
-            if (!c.get().schema(seq))
+            if (!c.get().schema(c, seq))
             {
                 debugf(WARN "Schema failed to encode (buf size %zu)" END LOGLEVEL_ARGS, buf.size());
                 return false;
@@ -180,11 +188,11 @@ public:
         return
             n == 0
             ? schema(ret)
-            : n-1 < sizeof...(Calls) && calls[n-1].get().call(args, ret);
+            : n-1 < sizeof...(Calls) && calls[n-1].get().call(calls[n-1].get(), args, ret);
     }
 
     std::tuple<Calls...> tuple;
-    std::array<std::reference_wrapper<AbstractCall>, sizeof...(Calls)> calls;
+    std::array<std::reference_wrapper<BaseCall>, sizeof...(Calls)> calls;
 };
 
 // This is a header, undefine the debugf macro
