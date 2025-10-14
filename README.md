@@ -14,10 +14,10 @@ optimisation [`-Og`].)
 
 ## Status: Proof of concept
 
-Currently there is a working demo in
-[FreeRTOS-Demo/](/FreeRTOS-Demo/) which should be possible to
-port to other platforms. There is some Python support in
-[python/](python/) which can connect to the demo and issue RPC commands.
+Currently there is a working demo in [FreeRTOS-Demo/](/FreeRTOS-Demo/)
+which should be possible to port to other platforms. There is some Python
+support in [python/comms_ccf/](python/comms_ccf/) which can connect to
+the demo and issue RPC commands.
 
 [![asciicast](https://asciinema.org/a/740327.svg)](https://asciinema.org/a/740327)
 

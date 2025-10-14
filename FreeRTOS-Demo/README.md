@@ -19,7 +19,7 @@ cmake --workflow --preset=run-debug
 ```
 and then you can run
 ```
-python ../python/tcp.py
+python ../python/comms_ccf/tcp.py
 ```
 
 ## Resource use
