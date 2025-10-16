@@ -12,13 +12,13 @@ import sys
 import time
 from argparse import ArgumentParser
 
-from background import BackgroundTasks
-from channel import Channels
-from hexdump import hexdump
-from log import print_logs
-from repl import Stdio, repl
-from rpc import Rpc
-from transport import StreamTransport
+from comms_ccf.background import BackgroundTasks
+from comms_ccf.channel import Channels
+from comms_ccf.hexdump import hexdump
+from comms_ccf.log import print_logs
+from comms_ccf.repl import Stdio, repl
+from comms_ccf.rpc import Rpc
+from comms_ccf.transport import StreamTransport
 
 
 async def amain():
@@ -76,7 +76,11 @@ def quit(*args, **kwargs):
     exit()
 
 
-if __name__ == "__main__":
+def main():
     # Make keyboard interrupt quit AsyncIO
     signal.signal(signal.SIGINT, quit)
     asyncio.run(amain())
+
+
+if __name__ == "__main__":
+    main()

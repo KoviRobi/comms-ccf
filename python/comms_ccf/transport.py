@@ -9,7 +9,8 @@ import typing as t
 
 from cobs.cobs import DecodeError, decode, encode
 from fnv_hash_fast import fnv1a_32
-from hexdump import hexdump
+
+from comms_ccf.hexdump import hexdump
 
 # Float (seconds)
 DEFAULT_TIMEOUT = 0.5
@@ -33,7 +34,10 @@ class Transport(t.Protocol):
 
 class StreamTransport:
     def __init__(
-        self, rx: asyncio.StreamReader, tx: asyncio.StreamWriter, log_fp: t.Optional[t.TextIO] = None
+        self,
+        rx: asyncio.StreamReader,
+        tx: asyncio.StreamWriter,
+        log_fp: t.Optional[t.TextIO] = None,
     ) -> None:
         self._tx = tx
         self._rx = rx
@@ -59,8 +63,8 @@ class StreamTransport:
                 read = await self._rx.read(MAX_PKT_SIZE)
                 idx = read.find(0)
                 if idx > 0:
-                    data = self._rxBuf + read[:idx + 1]
-                    self._rxBuf = read[idx + 1:]
+                    data = self._rxBuf + read[: idx + 1]
+                    self._rxBuf = read[idx + 1 :]
                     break
                 else:
                     self._rxBuf += read

@@ -15,12 +15,12 @@ from pathlib import Path
 from shlex import quote
 from shutil import which
 
-from background import BackgroundTasks
-from channel import Channels
-from log import print_logs
-from repl import Stdio, repl
-from rpc import Rpc
-from transport import StreamTransport
+from comms_ccf.background import BackgroundTasks
+from comms_ccf.channel import Channels
+from comms_ccf.log import print_logs
+from comms_ccf.repl import Stdio, repl
+from comms_ccf.rpc import Rpc
+from comms_ccf.transport import StreamTransport
 
 
 async def amain():
@@ -82,5 +82,9 @@ async def amain():
     proc.terminate()
 
 
-if __name__ == "__main__":
+def main():
     asyncio.run(amain())
+
+
+if __name__ == "__main__":
+    main()
