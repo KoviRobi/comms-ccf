@@ -14,6 +14,8 @@ optimisation [`-Og`].)
 
 ## Status: Proof of concept
 
+![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)
+
 Currently there is a working demo in [FreeRTOS-Demo/](/FreeRTOS-Demo/)
 which should be possible to port to other platforms. There is some Python
 support in [python/comms_ccf/](python/comms_ccf/) which can connect to
@@ -61,6 +63,8 @@ layer neater.
 
 
 ## Demo & Resource use
+
+![Size comparison](https://github.com/KoviRobi/comms-ccf/actions/workflows/FreeRTOS-Demo.yaml/badge.svg)
 
 There is a demo in the [FreeRTOS-Demo/](/FreeRTOS-Demo/) folder,
 with detailed information about where the flash/memory use comes from.

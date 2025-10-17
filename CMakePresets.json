@@ -25,6 +25,10 @@
     { "name": "debug", "configurePreset": "debug" },
     { "name": "release", "configurePreset": "release" }
   ],
+  "testPresets": [
+    { "name": "debug", "configurePreset": "debug", "outputOnFailure": true },
+    { "name": "release", "configurePreset": "release", "outputOnFailure": true }
+  ],
   "workflowPresets": [
     {
       "name": "debug",
@@ -38,6 +42,22 @@
       "steps": [
         { "type": "configure", "name": "release" },
         { "type": "build", "name": "release" }
+      ]
+    },
+    {
+      "name": "debug-test",
+      "steps": [
+        { "type": "configure", "name": "debug" },
+        { "type": "build", "name": "debug" },
+        { "type": "test", "name": "debug" }
+      ]
+    },
+    {
+      "name": "test",
+      "steps": [
+        { "type": "configure", "name": "release" },
+        { "type": "build", "name": "release" },
+        { "type": "test", "name": "release" }
       ]
     }
   ]
