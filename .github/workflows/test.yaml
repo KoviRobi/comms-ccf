@@ -1,19 +1,10 @@
-name: "Build FreeRTOS demo and compare sizes"
+name: "Run tests"
 
 on: [push]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
     contents: read
-    pages: write
-    id-token: write
-
-# Allow only one concurrent deployment, skipping runs queued between the
-# run in-progress and latest queued.  However, do NOT cancel in-progress
-# runs as we want to allow these production deployments to complete.
-concurrency:
-    group: "pages"
-    cancel-in-progress: false
 
 jobs:
     compare:
@@ -40,16 +31,4 @@ jobs:
 
             - name: "Nix: Build"
               run: |
-                nix develop -c bash -c "cd FreeRTOS-Demo && make compare"
-
-            - name: Upload artifact
-              uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b #v4
-              if: ${{ github.ref == 'refs/heads/main' }}
-              with:
-                  # Upload entire repository
-                  path: 'FreeRTOS-Demo/misc/'
-
-            - name: Deploy to GitHub Pages
-              if: ${{ github.ref == 'refs/heads/main' }}
-              id: deployment
-              uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e #v4
+                nix develop -c bash -c cmake --workflow test
