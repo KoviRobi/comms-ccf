@@ -26,8 +26,19 @@
     { "name": "release", "configurePreset": "release" }
   ],
   "testPresets": [
-    { "name": "debug", "configurePreset": "debug", "outputOnFailure": true },
-    { "name": "release", "configurePreset": "release", "outputOnFailure": true }
+    {
+        "name": "defaults",
+        "hidden": true,
+        "output": {
+            "outputOnFailure": true,
+            "outputLogFile": "${fileDir}/test.log",
+            "outputJUnitFile": "${fileDir}/test.junit",
+            "maxPassedTestOutputSize": 307200,
+            "maxFailedTestOutputSize": 307200
+        }
+    },
+    { "name": "debug", "configurePreset": "debug", "inherits": "defaults" },
+    { "name": "release", "configurePreset": "release", "inherits": "defaults"  }
   ],
   "workflowPresets": [
     {

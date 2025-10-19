@@ -1,3 +1,5 @@
+![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)
+
 # Comms-CCF
 
 This is a simple communication layer based on COBS, CBOR and FNV-1A
@@ -13,8 +15,6 @@ code. Especially when  using no optimisation [`-O0`] instead of debug
 optimisation [`-Og`].)
 
 ## Status: Proof of concept
-
-![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)
 
 Currently there is a working demo in [FreeRTOS-Demo/](/FreeRTOS-Demo/)
 which should be possible to port to other platforms. There is some Python
@@ -63,8 +63,6 @@ layer neater.
 
 
 ## Demo & Resource use
-
-![Size comparison](https://github.com/KoviRobi/comms-ccf/actions/workflows/FreeRTOS-Demo.yaml/badge.svg)
 
 There is a demo in the [FreeRTOS-Demo/](/FreeRTOS-Demo/) folder,
 with detailed information about where the flash/memory use comes from.

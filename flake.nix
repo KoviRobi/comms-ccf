@@ -28,6 +28,7 @@
             pkgs.python3.pkgs.squarify
             pkgs.python3.pkgs.intervaltree
             pkgs.python3.pkgs.cxxfilt
+            pkgs.python3.pkgs.junit2html
           ]
           ++ pkgs.lib.optionals demo [
             # FreeRTOSDemo

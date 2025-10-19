@@ -79,6 +79,7 @@ async def amain():
     if args.repl:
         await repl(Stdio(), locals)
 
+    background_tasks.suppress_exceptions = True
     proc.terminate()
 
 
