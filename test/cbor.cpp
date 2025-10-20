@@ -236,15 +236,15 @@ int main(int argc, char ** argv)
                 continue;                                                            \
             }                                                                        \
             std::vector<uint8_t> buf(bytes.size(), 0);                               \
-            std::span encoded{buf};                                                  \
-            auto encOk = Cbor::Cbor<TYPE>::encode(*expected, encoded);               \
+            std::span encodedSpan{buf};                                              \
+            auto encOk = Cbor::Cbor<TYPE>::encode(*expected, encodedSpan);           \
             if (!encOk || !std::ranges::equal(bytes, buf))                           \
             {                                                                        \
                 std::cerr << RED << "Failed to encode " << m[Decoded] << "\tinto\t"; \
                 for (auto c : bytes)                                                 \
                     fprintf(stderr, "%02X", c);                                      \
                 fprintf(stderr, "\tgot\t");                                          \
-                for (auto s = &*buf.begin(); s != &*encoded.begin(); ++s)            \
+                for (auto s = &*buf.begin(); s != &*encodedSpan.begin(); ++s)        \
                     fprintf(stderr, "%02X", *s);                                     \
                 std::cerr << RESET << "\n";                                          \
                 ok = false;                                                          \

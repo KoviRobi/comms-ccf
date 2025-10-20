@@ -38,6 +38,8 @@ byte!
 
 namespace Cobs
 {
+    // Because we output `runLength + 1`, i.e. the pointer to the null
+    // not the last non-null byte, the maximum is 254
     constexpr uint8_t maxRunLength = 254;
 
     constexpr size_t maxEncodedSize(size_t dataSize)

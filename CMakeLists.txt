@@ -103,6 +103,7 @@ foreach(test IN LISTS test_build_deps)
     target_compile_options(${test} PUBLIC
         -Wall
         -Wextra
+        -Wshadow
         -Wmissing-declarations
         $<$<CONFIG:Debug>:-g3 -Og>
         $<$<COMPILE_LANGUAGE:C>:-Wmissing-prototypes>

@@ -14,17 +14,17 @@ namespace Cobs
 {
     uint8_t Encoder::findRunLength()
     {
-        // Because we output `runLength + 1`, i.e. the pointer to the null not
-        // the last non-null byte, the maximum is 254
-        uint8_t runLength = 0;
-        for (; runLength < maxRunLength && runLength < data.size(); ++runLength)
+        // Because we output `runLength + 1`, i.e. the pointer to the
+        // null not the last non-null byte, the maximum is 254
+        uint8_t idx = 0;
+        for (; idx < maxRunLength && idx < data.size(); ++idx)
         {
-            if (data[runLength] == 0)
+            if (data[idx] == 0)
             {
                 break;
             }
         }
-        return runLength;
+        return idx;
     }
 
     Encoder::value_type Encoder::operator*() const
