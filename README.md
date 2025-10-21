@@ -1,4 +1,6 @@
-![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)
+[![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)
+<br/><sup>(click for more details)</sup>
+](https://kovirobi.github.io/comms-ccf/test.html)
 
 # Comms-CCF
 
