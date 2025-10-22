@@ -128,12 +128,12 @@ HTML that doesn't matter):
 | Infinity                                                                                      | `7:25` `7C00`                                                      | _Float16                          |
 | NaN                                                                                           | `7:25` `7E00`                                                      | _Float16                          |
 | -Infinity                                                                                     | `7:25` `FC00`                                                      | _Float16                          |
-| Infinity                                                                                      | `7:26` `7F800000`                                                  | float                             |
-| NaN                                                                                           | `7:26` `7FC00000`                                                  | float                             |
-| -Infinity                                                                                     | `7:26` `FF800000`                                                  | float                             |
-| Infinity                                                                                      | `7:27` `7FF0000000000000`                                          | double                            |
-| NaN                                                                                           | `7:27` `7FF8000000000000`                                          | double                            |
-| -Infinity                                                                                     | `7:27` `FFF0000000000000`                                          | double                            |
+| Infinity                                                                                      | `7:25` `7C00`                                                      | float                             |
+| NaN                                                                                           | `7:25` `7E00`                                                      | float                             |
+| -Infinity                                                                                     | `7:25` `FC00`                                                      | float                             |
+| Infinity                                                                                      | `7:25` `7C00`                                                      | double                            |
+| NaN                                                                                           | `7:25` `7E00`                                                      | double                            |
+| -Infinity                                                                                     | `7:25` `FC00`                                                      | double                            |
 | false                                                                                         | `7:20` ``                                                          | bool                              |
 | true                                                                                          | `7:21` ``                                                          | bool                              |
 | null                                                                                          | `7:22` ``                                                          | void *                            |
@@ -187,6 +187,7 @@ HTML that doesn't matter):
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #endif
 #include <float.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -447,10 +448,33 @@ typedef _Float16 half;
         using BitT = UintT<bytes * 8>;
         static bool encode(F value, std::span<uint8_t> & buf)
         {
-            // TODO: For deterministically encoded CBOR we would need
-            // to select the smallest float encoding
-            BitT bits = std::bit_cast<BitT>(value);
-            return ::Cbor::pack<BitT>(Major::Float, bits, buf);
+#if defined(CBOR_HALF_SUPPORT)
+            if (std::isnan(value))
+            {
+                const auto nan = std::bit_cast<uint16_t>(static_cast<_Float16>(NAN));
+                return ::Cbor::pack<uint16_t>(Major::Float, nan, buf);
+            }
+            const auto v16 = static_cast<_Float16>(value);
+            if (value == v16)
+            {
+                uint16_t b16 = std::bit_cast<uint16_t>(v16);
+                return ::Cbor::pack<uint16_t>(Major::Float, b16, buf);
+            }
+#endif
+            if (std::isnan(value))
+            {
+                const auto nan = std::bit_cast<uint32_t>(static_cast<float>(NAN));
+                return ::Cbor::pack<uint32_t>(Major::Float, nan, buf);
+            }
+            const auto v32 = static_cast<float>(value);
+            if (v32 == value)
+            {
+                const auto b32 = std::bit_cast<uint32_t>(v32);
+                return ::Cbor::pack<uint32_t>(Major::Float, b32, buf);
+            }
+            const auto v64 = static_cast<double>(value);
+            const auto b64 = std::bit_cast<uint64_t>(v64);
+            return ::Cbor::pack<uint64_t>(Major::Float, b64, buf);
         }
         static std::optional<F> decode(std::span<uint8_t> & buf)
         {

@@ -25,12 +25,12 @@ There are a few parts to this code:
 */
 #include "cbor.hpp"
 
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
 #include <algorithm>
 #include <charconv>
-#include <cmath>
 #include <concepts>
 #include <fstream>
 #include <iostream>
