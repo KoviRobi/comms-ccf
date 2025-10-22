@@ -1,0 +1,26 @@
+[
+  {
+    "summary": "No Comms-CCF"
+  },
+  {
+    "summary": "Add Comms-CCF, no RPC handlers"
+  },
+  {
+    "summary": "Add version RPC call"
+  },
+  {
+    "summary": "Add `add` call"
+  },
+  {
+    "summary": "Add `sub` call, similar to `add`"
+  },
+  {
+    "summary": "Add `greet` call"
+  },
+  {
+    "summary": "Add `readm_mem` and `write_mem` calls"
+  },
+  {
+    "summary": "Add test log task"
+  }
+]

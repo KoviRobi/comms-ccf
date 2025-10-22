@@ -39,13 +39,17 @@ def diffable_format(mapfile: MapFile, file: t.TextIO = sys.stdout):
             indent("- name:", dumps(output_section.name))
             # Don't print address to make diffs easier
             # indent(" ", "address:", f"0x{output_section.address:08X}")
-            indent(" ", "size:", f"0x{len(output_section):08X}")
+            indent(" ", "size:", f"0x{output_section.size:08X}")
+            indent(" ", "fill:", f"0x{output_section.fill:08X}")
+            indent(" ", "length:", f"0x{len(output_section):08X}")
             indent(" ", "input sections:")
             for input_section in sorted(output_section.inputs, key=len):
                 indent("-", "name:", dumps(input_section.name))
                 # Don't print address to make diffs easier
                 # indent(" ", "address:", f"0x{input_section.address:08X}")
-                indent(" ", "size:", f"0x{len(input_section):08X}")
+                indent(" ", "size:", f"0x{input_section.size:08X}")
+                indent(" ", "fill:", f"0x{input_section.fill:08X}")
+                indent(" ", "length:", f"0x{len(input_section):08X}")
                 indent(" ", "symbols:")
                 for sym in input_section.symbols:
                     indent("-", dumps(sym.name))

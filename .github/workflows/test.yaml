@@ -46,11 +46,11 @@ jobs:
 
                 (
                     cd FreeRTOS-Demo
-                    make compare
+                    make compare p=minsizerel
                 )
 
                 mkdir public
-                mv FreeRTOS-Demo/misc/* public/
+                mv FreeRTOS-Demo/build/minsizerel/compare/* public/
                 mv test.html public/
 
             - name: Upload pages

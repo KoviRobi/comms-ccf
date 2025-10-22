@@ -67,7 +67,6 @@ def svg(
         area_name = area.name.strip('"')
         area_short = utils.ellipsise_templates(area_name)
         area_colour = palette(area)
-        area_id = f"area-{area.name}-{area.origin:08X}"
         sorted_outputs = list(sorted(output_sections, key=len))
         output_sizes = [len(section) for section in sorted_outputs if len(section) > 0]
         area_used = sum(output_sizes)
@@ -91,12 +90,12 @@ def svg(
         output_normed = normalize_sizes(output_sizes, 1, 1)
         output_rects = list(zip(squarify(output_normed, 0, 0, 1, 1), sorted_outputs))
         indent(
-            f'<g id="{utils.xmlescape(area_id)}_group" class="area group" transform="'
+            f'<g id="{utils.xmlescape(area_name)}_group" class="area group" transform="'
             f"translate({area_x} {area_y})",
             f'scale({area_width} {area_height})">',
         )
         indent(
-            f'<view id="{utils.xmlescape(area_id)}" viewBox="'
+            f'<view id="{utils.xmlescape(area_name)}" viewBox="'
             f'{area_x} {area_y} {area_width} {area_height}"/>',
         )
         for output_rect, output_section in output_rects:
@@ -123,14 +122,13 @@ def svg(
                 output_desc += "\n" + extra_output_desc
 
             output_colour = palette(output_section)
-            output_id = f"{area_id}-output-{output_name}-{output_section.address:08X}"
             indent(
-                f'<g id="{utils.xmlescape(output_id)}_group" class="output group" transform="'
+                f'<g id="{utils.xmlescape(output_name)}_group" class="output group" transform="'
                 f'translate({output_rect["x"]} {output_rect["y"]})',
                 f'scale({output_rect["dx"]} {output_rect["dy"]})">',
             )
             indent(
-                f'<view id="{utils.xmlescape(output_id)}" viewBox="'
+                f'<view id="{utils.xmlescape(output_name)}" viewBox="'
                 f'{area_x + area_width * output_rect["x"]}',
                 f'{area_y + area_height * output_rect["y"]}',
                 f'{area_width * output_rect["dx"]}',
@@ -176,14 +174,13 @@ def svg(
                     input_desc += "\n" + extra_input_desc
 
                 input_colour = palette(input_section)
-                input_id = f"{output_id}-input-{input_name}-{input_section.address:08X}"
                 indent(
-                    f'<g id="{utils.xmlescape(input_id)}_group" class="input group" transform="'
+                    f'<g id="{utils.xmlescape(input_name)}_group" class="input group" transform="'
                     f'translate({input_rect["x"]} {input_rect["y"]})',
                     f'scale({input_rect["dx"]} {input_rect["dy"]})">',
                 )
                 indent(
-                    f'<view id="{utils.xmlescape(input_id)}" viewBox="'
+                    f'<view id="{utils.xmlescape(input_name)}" viewBox="'
                     f'{area_x + area_width * output_rect["x"] + area_width * output_rect["dx"] * input_rect["x"]}',
                     f'{area_y + area_height * output_rect["y"] + area_height * output_rect["dy"] * input_rect["y"]}',
                     f'{area_width * output_rect["dx"] * input_rect["dx"]}',
@@ -191,8 +188,8 @@ def svg(
                 )
                 if input_overlay:
                     indent(
-                        f'<a href="#{utils.xmlescape(input_id)}"><rect',
-                        f'id="{utils.xmlescape(input_id)}_rect"',
+                        f'<a href="#{utils.xmlescape(input_name)}"><rect',
+                        f'id="{utils.xmlescape(input_name)}_rect"',
                         f'class="input rect" fill="{input_colour}"',
                         'x="0" y="0" width="1" height="1">'
                         f"<title>{utils.xmlescape(input_desc)}</title></rect>",
@@ -207,8 +204,8 @@ def svg(
                 indent("</g>")
             if output_overlay:
                 indent(
-                    f'<a class="obscures" href="#{utils.xmlescape(output_id)}">'
-                    f'<rect id="{utils.xmlescape(output_id)}_rect"',
+                    f'<a class="obscures" href="#{utils.xmlescape(output_name)}">'
+                    f'<rect id="{utils.xmlescape(output_name)}_rect"',
                     f'class="output rect" fill="{output_colour}"',
                     'x="0" y="0" width="1" height="1">',
                     f"<title>{utils.xmlescape(output_desc)}</title></rect>",
@@ -223,8 +220,8 @@ def svg(
             indent("</g>")
         if area_overlay:
             indent(
-                f'<a class="obscures" href="#{utils.xmlescape(area_id)}">'
-                f'<rect id="{utils.xmlescape(area_id)}_rect"',
+                f'<a class="obscures" href="#{utils.xmlescape(area_name)}">'
+                f'<rect id="{utils.xmlescape(area_name)}_rect"',
                 f'class="area rect" fill="{area_colour}"',
                 f'x="0" y="0" width="1" height="1">',
                 f"<title>{utils.xmlescape(area_desc)}</title></rect>",

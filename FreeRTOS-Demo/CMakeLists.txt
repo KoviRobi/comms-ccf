@@ -58,7 +58,10 @@ add_custom_target(run
 )
 
 # For comparing sizes
-foreach(CCF_FEATURES RANGE 7)
+file(READ "${CMAKE_CURRENT_LIST_DIR}/compare/data.json" COMPARE_DATA)
+string(JSON COMPARE_LEN LENGTH "${COMPARE_DATA}")
+math(EXPR COMPARE_LAST "${COMPARE_LEN} - 1")
+foreach(CCF_FEATURES RANGE ${COMPARE_LAST})
     set(TARGET "FreeRTOS-Demo-${CCF_FEATURES}")
     add_executable("${TARGET}" EXCLUDE_FROM_ALL
         "$<TARGET_PROPERTY:FreeRTOS-Demo,SOURCES>"
