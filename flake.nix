@@ -21,6 +21,7 @@
             pkgs.uv
             pkgs.python3
             pkgs.python3.pkgs.pytest
+            pkgs.python3.pkgs.pyyaml
             pkgs.python3.pkgs.hypothesis
             pkgs.python3.pkgs.cobs
             pkgs.python3.pkgs.cbor
