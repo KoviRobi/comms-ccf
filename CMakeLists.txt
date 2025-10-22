@@ -61,10 +61,8 @@ add_build_and_test(
     NAME rpc_demo
     DEPENDS rpc
     COMMAND
-        uv run comms-ccf-stdio
-        --verbose
-        --no-repl
-        $<TARGET_FILE:rpc>
+        uv run comms-ccf --verbose --no-repl
+        -- stdio $<TARGET_FILE:rpc>
 )
 
 add_executable(rpc_debug test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
@@ -81,10 +79,8 @@ add_build_and_test(
     NAME rpc_debug_demo
     DEPENDS rpc_debug
     COMMAND
-        uv run comms-ccf-stdio
-        --verbose
-        --no-repl
-        $<TARGET_FILE:rpc_debug>
+        uv run comms-ccf --verbose --no-repl
+        -- stdio $<TARGET_FILE:rpc_debug>
 )
 
 add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)

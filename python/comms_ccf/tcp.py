@@ -1,87 +1,20 @@
-#!/usr/bin/env python3
-
 """
-Connects to a TCP Comms-CCF socket
-
-TODO: De-duplicate along with wrap_subprocess.py
+Connects to a TCP Comms-CCF socket (plaintext)
 """
 
 import asyncio
-import signal
-import sys
-import time
 from argparse import ArgumentParser
-
-from comms_ccf.background import BackgroundTasks
-from comms_ccf.channel import Channels
-from comms_ccf.hexdump import hexdump
-from comms_ccf.log import print_logs
-from comms_ccf.repl import Stdio, repl
-from comms_ccf.rpc import Rpc
-from comms_ccf.transport import StreamTransport
+from contextlib import asynccontextmanager
 
 
-async def amain():
-    parser = ArgumentParser()
-    parser.add_argument("--host", default="localhost", help="Host to connect to")
-    parser.add_argument("--port", default=4321, type=int, help="Port to connect to")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Dump packets")
-    parser.add_argument(
-        "--no-repl", "-n", dest="repl", action="store_false", help="Only try example"
-    )
-    parser.add_argument(
-        "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
-    )
-    args = parser.parse_args()
+def command_parser(parser_or_subparser: ArgumentParser) -> ArgumentParser:
+    parser_or_subparser.add_argument("--host", default="localhost", help="Host to connect to")
+    parser_or_subparser.add_argument("--port", default=4321, type=int, help="Port to connect to")
+    return parser_or_subparser
 
-    global rx, tx, transport, rpc
+@asynccontextmanager
+async def command(args):
     rx, tx = await asyncio.open_connection(args.host, args.port)
-    transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
-    loop = asyncio.get_event_loop()
-    background_tasks = BackgroundTasks(loop)
-    channels = Channels(transport, loop)
-    background_tasks.add(channels.loop)
-    rpc = Rpc(channels)
-
-    if args.log:
-        background_tasks.add(print_logs, channels)
-
-    while True:
-        try:
-            await rpc.discover()
-            break
-        except Exception as e:
-            print("Failed to discover RPC:", str(e) or repr(e))
-            time.sleep(0.2)
-
-    locals = {k: v for k, v in rpc.methods().items()}
-    locals["help"] = rpc.help
-    locals["hexdump"] = hexdump
-    locals["dir"] = dir
-
-    print("Use help(name=None) for discovered methods")
-    print("(optionally name to document just that method)")
-    try:
-        print("E.g. add(2,3) ~>", await rpc.add(2, 3))
-    except Exception as e:
-        print("Exception in demo:", str(e) or repr(e))
-
-    if args.repl:
-        await repl(Stdio(), locals)
-    background_tasks.suppress_exceptions = True
-
-
-def quit(*args, **kwargs):
-    sys.stdin.close()
-    print("Press Ctrl-D (or any other key) to exit")
-    exit()
-
-
-def main():
-    # Make keyboard interrupt quit AsyncIO
-    signal.signal(signal.SIGINT, quit)
-    asyncio.run(amain())
-
-
-if __name__ == "__main__":
-    main()
+    yield rx, tx
+    rx.feed_eof()
+    tx.close()

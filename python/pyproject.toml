@@ -20,8 +20,7 @@ py-modules = [ 'comms_ccf', 'binutils_mapfile' ]
 
 [project.scripts]
 binutils-mapfile = "binutils_mapfile.__main__:main"
-comms-ccf-stdio = "comms_ccf.wrap_subprocess:main"
-comms-ccf-tcp = "comms_ccf.tcp:main"
+comms-ccf = "comms_ccf.__main__:main"
 hexdump = "comms_ccf.hexdump:main"
 
 [project.urls]

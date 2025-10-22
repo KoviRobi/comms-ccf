@@ -19,7 +19,7 @@ cmake --workflow --preset=run-debug
 ```
 and then you can run
 ```
-uv run comms-ccf-tcp
+uv run comms-ccf tcp
 ```
 
 ## Resource use
