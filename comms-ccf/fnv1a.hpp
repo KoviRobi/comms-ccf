@@ -64,10 +64,10 @@ namespace Fnv1a
             return;
         }
         const uint32_t got = checksum(span.first(end - 4), hash);
-        span[end - 4] = static_cast<uint32_t>(got) >>  0;
-        span[end - 3] = static_cast<uint32_t>(got) >>  8;
-        span[end - 2] = static_cast<uint32_t>(got) >> 16;
-        span[end - 1] = static_cast<uint32_t>(got) >> 24;
+        span[end - 4] = static_cast<uint8_t>(got >>  0);
+        span[end - 3] = static_cast<uint8_t>(got >>  8);
+        span[end - 2] = static_cast<uint8_t>(got >> 16);
+        span[end - 1] = static_cast<uint8_t>(got >> 24);
     }
 
     template<size_t Size>
