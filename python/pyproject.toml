@@ -8,9 +8,15 @@ description = "Python tools for the comms-ccf project"
 readme = "README.md"
 requires-python = ">=3.13"
 
-[dependency-groups]
-comms_ccf = [ 'cobs', 'cbor', 'fnv-hash-fast' ]
-binutils_mapfile = [ 'cxxfilt', 'intervaltree', 'squarify' ]
+dependencies = [
+    'cbor',
+    'cobs',
+    'cxxfilt',
+    'fnv-hash-fast',
+    'intervaltree',
+    'pyelftools',
+    'squarify',
+ ]
 
 [build-system]
 requires = ["setuptools"]

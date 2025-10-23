@@ -10,8 +10,7 @@ import sys
 import time
 from argparse import ArgumentParser
 
-from comms_ccf import tcp
-from comms_ccf import stdio
+from comms_ccf import rtt, stdio, tcp
 from comms_ccf.background import BackgroundTasks
 from comms_ccf.channel import Channels
 from comms_ccf.hexdump import hexdump
@@ -37,6 +36,9 @@ async def amain():
 
     stdio_parser = stdio.command_parser(sp.add_parser("stdio"))
     stdio_parser.set_defaults(func=stdio.command)
+
+    rtt_parser = rtt.command_parser(sp.add_parser("rtt"))
+    rtt_parser.set_defaults(func=rtt.command)
 
     args = parser.parse_args()
     async with args.func(args) as context:
