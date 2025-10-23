@@ -15,6 +15,7 @@ dependencies = [
     'fnv-hash-fast',
     'intervaltree',
     'pyelftools',
+    'pyserial-asyncio',
     'squarify',
  ]
 

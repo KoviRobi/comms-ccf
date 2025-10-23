@@ -21,6 +21,7 @@
             pkgs.uv
             pkgs.python3
             pkgs.python3.pkgs.pyelftools
+            pkgs.python3.pkgs.pyserial-asyncio
             pkgs.python3.pkgs.pytest
             pkgs.python3.pkgs.hypothesis
             pkgs.python3.pkgs.cobs
