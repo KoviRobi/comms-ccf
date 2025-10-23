@@ -66,6 +66,7 @@ async def amain():
                 time.sleep(0.2)
 
         locals = {k: v for k, v in rpc.methods().items()}
+        locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
         locals["help"] = rpc.help
         locals["hexdump"] = hexdump
         locals["dir"] = dir
