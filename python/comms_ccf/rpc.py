@@ -56,7 +56,8 @@ class Rpc:
     def add_function(self, index, name, doc, ret, *args):
         # Using default arguments is a workaround to using `index`
         # by value not reference
-        wrapper = lambda n=index: lambda *args: self(n, args)  # noqa: E731
+        def wrapper(n=index):
+            return lambda *args, timeout: self(n, args, timeout=timeout)
 
         sig = [
             Parameter(
