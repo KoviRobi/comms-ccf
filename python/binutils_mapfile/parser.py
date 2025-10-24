@@ -16,7 +16,7 @@ from pathlib import Path
 from cxxfilt import InvalidName, demangle
 from intervaltree.intervaltree import Interval, IntervalTree
 
-from binutils_mapfile.utils import IterWithPutBack
+from binutils_mapfile.utils import IterWithPutBack, simplify_std_templates
 
 HEX_RE = re.compile(r"\s*(0x[0-9a-fA-F]+)\b")
 RELAXED_RE = re.compile(r"\s*(0x[0-9a-fA-F]+)\s+\(size before relaxing\)")
@@ -159,6 +159,7 @@ class Section:
                 mangleIdx += 1  # Swallow "."
                 try:
                     name = name[:mangleIdx] + demangle(name[mangleIdx:])
+                    name = simplify_std_templates(name)
                 except InvalidName:
                     pass
             line = line[SECTION_NAME_LEN:]

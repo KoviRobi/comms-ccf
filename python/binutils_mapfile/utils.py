@@ -43,6 +43,30 @@ def indent(
         file.write("\n")
 
 
+def simplify_std_templates(symbol: str):
+    for char in [
+        ("char", ""),
+        ("wchar_t", "w"),
+        ("char8_t", "u8"),
+        ("char16_t", "u16"),
+        ("char32_t", "u32"),
+    ]:
+        for template in [
+            (
+                "basic_string_view<{0}, std::char_traits<{0}> >",
+                "{0}string_view",
+            ),
+            (
+                "basic_string<{0}, std::char_traits<{0}>, std::allocator<{0}> >",
+                "{0}string",
+            ),
+        ]:
+            symbol = symbol.replace(
+                template[0].format(char[0]), template[1].format(char[1])
+            )
+    return symbol
+
+
 def ellipsise_templates(symbol: str):
     """
     Shorten templated values by replacing them with ellipsis (...)
