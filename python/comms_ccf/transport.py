@@ -57,17 +57,15 @@ class StreamTransport:
             await self._tx.drain()
 
     async def recv(self, *, timeout: float = DEFAULT_TIMEOUT) -> tuple[int, bytes]:
-        deadline = timeout + time.time()
-        while True:
-            async with asyncio.timeout(deadline - time.time()):
-                read = await self._rx.read(MAX_PKT_SIZE)
-                idx = read.find(0)
+        async with asyncio.timeout(timeout):
+            while True:
+                idx = self._rxBuf.find(0)
                 if idx > 0:
-                    data = self._rxBuf + read[: idx + 1]
-                    self._rxBuf = read[idx + 1 :]
+                    data = self._rxBuf[:idx + 1]
+                    self._rxBuf = self._rxBuf[idx + 1:]
                     break
                 else:
-                    self._rxBuf += read
+                    self._rxBuf += await self._rx.read(MAX_PKT_SIZE)
                     assert len(self._rxBuf) < MAX_PKT_SIZE, "Packet max size exceeded"
         if self._log:
             print(hexdump(data, "RX: "), file=self._log)
