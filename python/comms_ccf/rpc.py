@@ -57,7 +57,7 @@ class Rpc:
         # Using default arguments is a workaround to using `index`
         # by value not reference
         def wrapper(n=index):
-            return lambda *args, timeout: self(n, args, timeout=timeout)
+            return lambda *args, timeout = DEFAULT_TIMEOUT: self(n, args, timeout=timeout)
 
         sig = [
             Parameter(
