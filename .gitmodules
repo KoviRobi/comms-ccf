@@ -1,6 +1,9 @@
 [submodule "FreeRTOS-Demo/FreeRTOS-Kernel"]
 	path = FreeRTOS-Demo/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "FreeRTOS-Demo/LuminaryMicro"]
+	path = FreeRTOS-Demo/LuminaryMicro
+	url = https://github.com/KoviRobi/lm3s6965-drivers.git
 [submodule "recording/tmux-keylog"]
 	path = recording/tmux-keylog
 	url = https://github.com/KoviRobi/tmux-keylog.git
