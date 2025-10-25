@@ -3,6 +3,7 @@ Simple REPL with history and tab completion (if readline is present)
 """
 
 import asyncio
+import pdb
 import traceback
 from pathlib import Path
 from typing import AsyncGenerator
@@ -26,7 +27,7 @@ class Stdio:
         return await asyncio.to_thread(lambda: print(*args, **kwargs))
 
 
-async def repl(io, locals):
+async def repl(io, locals, debug=False):
     if readline and rlcompleter:
         completer = rlcompleter.Completer(namespace=locals)
         readline.set_completer(completer.complete)
@@ -63,5 +64,7 @@ async def repl(io, locals):
                 expr = await expr
             if expr is not None:
                 await io.print("out>", expr)
-        except Exception:
+        except Exception as e:
             await io.print(traceback.format_exc())
+            if debug:
+                pdb.post_mortem(e.__traceback__)

@@ -29,7 +29,12 @@ async def amain():
     parser.add_argument(
         "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
     )
-    sp = parser.add_subparsers(description="Subcommands, see `%(prog)s <subcommand> --help`")
+    parser.add_argument(
+        "--debug", "-d", action="store_true", help="Open debugger on exceptions"
+    )
+    sp = parser.add_subparsers(
+        description="Subcommands, see `%(prog)s <subcommand> --help`"
+    )
 
     tcp_parser = tcp.command_parser(sp.add_parser("tcp"))
     tcp_parser.set_defaults(func=tcp.command)
@@ -51,7 +56,7 @@ async def amain():
         loop = asyncio.get_event_loop()
         background_tasks = BackgroundTasks(loop)
         channels = Channels(transport, loop)
-        background_tasks.add(channels.loop)
+        background_tasks.add(channels.loop, args.debug)
         rpc = Rpc(channels)
 
         if args.log:
@@ -80,7 +85,7 @@ async def amain():
                 print("Exception in demo:", str(e) or repr(e))
 
         if args.repl:
-            await repl(Stdio(), locals)
+            await repl(Stdio(), locals, args.debug)
         background_tasks.suppress_exceptions = True
 
 

@@ -13,6 +13,7 @@ using a queue instead of futures.
 
 from asyncio import Future, IncompleteReadError, get_event_loop, shield, wait_for
 from enum import IntEnum
+import pdb
 
 from comms_ccf.transport import DEFAULT_TIMEOUT, Transport
 
@@ -32,7 +33,7 @@ class Channels:
         if channel not in self._channels:
             self._channels[channel] = self._loop.create_future()
 
-    async def loop(self):
+    async def loop(self, debug=False):
         while True:
             try:
                 chan, data = await self._transport.recv()
@@ -59,6 +60,8 @@ class Channels:
                 break
             except Exception as e:
                 print("Exception in channel", str(e) or repr(e))
+                if debug:
+                    pdb.post_mortem(e.__traceback__)
 
     async def send(
         self, channel: int, data: bytes, *, timeout: float = DEFAULT_TIMEOUT
