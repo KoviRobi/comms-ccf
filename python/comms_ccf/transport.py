@@ -61,8 +61,8 @@ class StreamTransport:
             while True:
                 idx = self._rxBuf.find(0)
                 if idx > 0:
-                    data = self._rxBuf[:idx + 1]
-                    self._rxBuf = self._rxBuf[idx + 1:]
+                    data = self._rxBuf[: idx + 1]
+                    self._rxBuf = self._rxBuf[idx + 1 :]
                     break
                 else:
                     self._rxBuf += await self._rx.read(MAX_PKT_SIZE)

@@ -11,9 +11,9 @@ The channels only remember the latest message. An alternative could be
 using a queue instead of futures.
 """
 
+import pdb
 from asyncio import Future, IncompleteReadError, get_event_loop, shield, wait_for
 from enum import IntEnum
-import pdb
 
 from comms_ccf.transport import DEFAULT_TIMEOUT, Transport
 

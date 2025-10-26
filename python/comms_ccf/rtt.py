@@ -4,11 +4,11 @@ https://kb.segger.com/J-Link_RTT_TELNET_Channel
 """
 
 import asyncio
-from contextlib import asynccontextmanager
 import os
 import re
 import sys
 from argparse import ArgumentParser
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import elftools.elf.sections as elf_sections

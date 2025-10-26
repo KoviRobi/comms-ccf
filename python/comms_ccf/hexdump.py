@@ -4,15 +4,18 @@ Simple hex-dump which is a mirror of the C++ hexdump in test/hexdump.hpp
 
 import sys
 
+
 def hexdump(data: bytes, prefix="") -> str:
     ret = ""
     for line in range(0, len(data), 16):
         ret += f"{prefix}{line:04X}: "
         for col in range(0, 16):
-            if col == 0: pass
+            # fmt: off
+            if    col      == 0: pass
             elif (col & 7) == 0: ret += "    "
             elif (col & 3) == 0: ret += "  "
             elif (col & 1) == 0: ret += " "
+            # fmt: on
             pos = line + col
             if pos < len(data):
                 ret += f"{data[pos]:02X}"

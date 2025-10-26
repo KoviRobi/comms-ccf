@@ -25,6 +25,10 @@ requires = ["setuptools"]
 [tool.setuptools]
 py-modules = [ 'comms_ccf', 'binutils_mapfile' ]
 
+[tool.isort]
+profile = "black"
+src_paths = [ "comms_ccf", "binutils_mapfile" ]
+
 [project.scripts]
 binutils-mapfile = "binutils_mapfile.__main__:main"
 comms-ccf = "comms_ccf.__main__:main"
