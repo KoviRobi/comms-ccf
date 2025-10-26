@@ -20,18 +20,20 @@ from comms_ccf.hexdump import hexdump
 from comms_ccf.log import print_logs
 from comms_ccf.repl import Stdio, repl, script
 from comms_ccf.rpc import Rpc
+from comms_ccf.tk.gui import TkGui
 from comms_ccf.transport import StreamTransport
+from comms_ccf.types import Console
 
 
-async def demo_rpc(rpc: Rpc):
+async def demo_rpc(console: Console, rpc: Rpc):
     if add := getattr(rpc, "add", None):
         try:
-            print("E.g. add(2,3) ~>", await add(2, 3))
+            await console.print("E.g. add(2,3) ~>", await add(2, 3))
         except Exception as e:
-            print("Exception in demo:", str(e) or repr(e))
+            await console.print("Exception in demo:", str(e) or repr(e))
 
 
-async def init_locals(rpc: Rpc, debug: bool):
+async def init_locals(console: Console, rpc: Rpc, debug: bool):
     while True:
         try:
             await rpc.discover()
@@ -39,10 +41,10 @@ async def init_locals(rpc: Rpc, debug: bool):
         except EOFError:
             raise  # No point in trying again
         except Exception as e:
-            print("Failed to discover RPC:", str(e) or repr(e))
+            await console.print("Failed to discover RPC:", str(e) or repr(e))
             if debug:
                 pdb.post_mortem()
-            time.sleep(0.2)
+            await asyncio.sleep(0.2)
 
     locals = {k: v for k, v in rpc.methods().items()}
     locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
@@ -51,8 +53,8 @@ async def init_locals(rpc: Rpc, debug: bool):
     locals["dir"] = lambda: list(locals.keys() - ["__builtins__"])
     locals["locals"] = lambda: {k: v for k, v in locals.items() if k != "__builtins__"}
 
-    print("Use help(name=None) for discovered methods")
-    print("(optionally name to document just that method)")
+    await console.print("Use help(name=None) for discovered methods")
+    await console.print("(optionally name to document just that method)")
     return locals
 
 
@@ -72,6 +74,7 @@ async def amain():
     parser.add_argument(
         "--debug", "-d", action="store_true", help="Open debugger on exceptions"
     )
+    parser.add_argument("--tk", "-t", action="store_true", help="Tk GUI")
     sp = parser.add_subparsers(
         description="Subcommands, see `%(prog)s <subcommand> --help`", required=True
     )
@@ -93,26 +96,44 @@ async def amain():
         [t.Any],
         t.AsyncContextManager[tuple[asyncio.StreamReader, asyncio.StreamWriter], t.Any],
     ] = args.func
+    async with func(args) as context:
+        loop = asyncio.get_event_loop()
+        background_tasks = BackgroundTasks(loop, args.debug)
 
-    loop = asyncio.get_event_loop()
-    async with func(args) as context, Stdio(loop) as console:
+        tk_gui = None
+        if args.tk:
+            tk_gui = TkGui(args.log, args.repl)
+            background_tasks.add(asyncio.to_thread, tk_gui.loop)
+
+        global console
+        if tk_gui is not None and tk_gui.console is not None:
+            console = tk_gui.console
+        else:
+            console = Stdio(loop)
+
         rx, tx = context
 
         transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
-        channels = Channels(transport, loop)
-        rpc = Rpc(channels)
+        channels = Channels(transport, console, loop)
+        rpc = Rpc(channels, console, args.debug)
 
-        background_tasks = BackgroundTasks(loop)
         try:
             # First open the log channel before starting the channels loop
             if args.log:
-                background_tasks.add(print_logs, channels, args.expect_logs)
+                output = console.print
+                if tk_gui is not None and tk_gui.logs is not None:
+                    logs = tk_gui.logs
+
+                    def output(*row):
+                        return logs.insert_row(row)
+
+                background_tasks.add(print_logs, loop, channels, output, args.expect_logs)
 
             background_tasks.add(channels.loop, args.debug)
 
             if args.repl or args.script_file:
-                locals = await init_locals(rpc, args.debug)
-                await demo_rpc(rpc)
+                locals = await init_locals(console, rpc, args.debug)
+                await demo_rpc(console, rpc)
 
                 if args.script_file:
                     errors = await script(args.script_file, locals)

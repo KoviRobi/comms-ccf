@@ -17,11 +17,12 @@ from comms_ccf.transport import DEFAULT_TIMEOUT
 
 
 class Rpc:
-    def __init__(self, channels: Channels, seqNo: int = randint(0, 0xFF) & ~1):
+    def __init__(self, channels: Channels, console, seqNo: int = randint(0, 0xFF) & ~1):
         """
         Note: Even numbers are to the device, odd numbers are from
         the device
         """
+        self._console = console
         self._channels = channels
         self._methods: dict[str, t.Callable[..., t.Any]] = {"schema": self.schema}
         self._doc = pydoc.TextDoc()
@@ -48,16 +49,16 @@ class Rpc:
     async def discover(self, timeout: float = DEFAULT_TIMEOUT):
         self._channels.open_channel(Channel.RPC)
         self._schema = await self(0, [], timeout=timeout)
-        print("Schema", self._schema)
+        await self._console.print("Schema", self._schema)
         assert isinstance(self._schema, list), "Bad schema"
         for index, fun in enumerate(self._schema, start=1):
-            self.add_function(index, *fun)
+            await self.add_function(index, *fun)
 
     def schema(self) -> list[list[str]]:
         "show the RPC schema"
         return self._schema
 
-    def add_function(self, index, name, doc, ret, *args):
+    async def add_function(self, index, name, doc, ret, *args):
         # Using default arguments is a workaround to using `index`
         # by value not reference
         def wrapper(n=index):
@@ -79,15 +80,15 @@ class Rpc:
         setattr(call, "__signature__", call_signature)
         self._methods[name] = call
         setattr(self, name, call)
-        print(f"Discovered {call.__name__}{call_signature}")
+        await self._console.print(f"Discovered {call.__name__}{call_signature}")
 
     def methods(self) -> dict[str, t.Callable[..., object]]:
         return self._methods
 
-    def help(self, thing: t.Optional[object] = None):
-        print("\n")
+    async def help(self, thing: t.Optional[object] = None):
+        await self._console.print("\n")
         if thing is not None:
-            print(indent(self._doc.document(thing), "| "))
+            await self._console.print(indent(self._doc.document(thing), "| "))
         else:
             for method in self._methods.values():
-                print(indent(self._doc.document(method), "| "))
+                await self._console.print(indent(self._doc.document(method), "| "))
