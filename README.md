@@ -38,6 +38,8 @@ in properly:
     4. [ ] Storing values (e.g. objects) across function calls is not
     done -- probably not necessary though.
     5. [ ] Proper error values for issues with the RPC.
+    6. [ ] Encoding Python types more compactly (e.g. int/list of ints
+    rather than string).
 3. [ ] Other protocols such as ~logging~ or streaming sensor results
 not yet demonstrated.
    1. [X] Basic logging done.
