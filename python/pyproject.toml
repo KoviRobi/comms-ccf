@@ -14,6 +14,7 @@ dependencies = [
     'cxxfilt',
     'fnv-hash-fast',
     'intervaltree',
+    'jinja2',
     'pyelftools',
     'pyserial-asyncio',
     'squarify',

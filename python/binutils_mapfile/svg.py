@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import sys
 import typing as t
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from random import Random
 
+from jinja2 import Environment, PackageLoader, select_autoescape
 from squarify import normalize_sizes, squarify
 
 import binutils_mapfile.utils as utils
@@ -23,6 +25,51 @@ def random_palette(_) -> str:
     return f"#{random.randint(0, ((1 << 24) - 1)):06X}"
 
 
+env = Environment(
+    loader=PackageLoader("binutils_mapfile"),
+    autoescape=select_autoescape(default=True),
+)
+
+
+@dataclass
+class SvgRect:
+    name: str
+    short: str
+    description: str
+    colour: str
+    x: float
+    y: float
+    w: float
+    h: float
+
+
+@dataclass
+class SvgInputSection(SvgRect):
+    pass
+
+
+@dataclass
+class SvgOutputSection(SvgRect):
+    input_sections: tuple[SvgInputSection, ...]
+
+
+@dataclass
+class SvgArea(SvgRect):
+    output_sections: tuple[SvgOutputSection, ...]
+
+
+@dataclass
+class SvgOutput:
+    width: int
+    height: int
+    js: str
+    css: str
+    areas: tuple[SvgArea, ...]
+    area_overlay: bool
+    input_overlay: bool
+    output_overlay: bool
+
+
 def svg(
     mapfile: MapFile,
     file: t.TextIO = sys.stdout,
@@ -34,35 +81,11 @@ def svg(
     input_overlay: bool = True,
     extra_tooltip: None | t.Callable[[Region], None | str] = None,
 ):
-    def indent(*args):
-        return utils.indent(*args, level=2, file=file, strip=4)
-
-    indent('<?xml version="1.0" encoding="UTF-8"?>')
-    indent(
-        f'<svg width="{width}mm" height="{height}mm" viewBox="0 0 {width} {height}"',
-        'preserveAspectRatio="none" version="1.1" xmlns="http://www.w3.org/2000/svg">',
-    )
-    # Crosshatch pattern
-    indent("<defs>")
-    indent(
-        '    <pattern id="crosshatch" width="5" height="1" ',
-        'patternTransform="rotate(45)" patternUnits="userSpaceOnUse"',
-        'preserveAspectRatio="xMidYMid">',
-    )
-    indent('        <rect width="1" height="1" fill="#000000"/>')
-    indent("    </pattern>")
-    indent("</defs>")
-    css = Path(__file__).parent / "svg.css"
-    with css.open("rt") as fp:
-        indent("<style>")
-        while line := fp.readline():
-            indent(line.rstrip())
-        indent("</style>")
-    indent(f'<rect width="{width}" height="{height}" fill="url(#crosshatch)"/>')
     # The areas aren't square maps, just one after another
     areas = list(mapfile.iter_area_sections())
     area_height = height / len(areas)
     area_x = 0
+    svg_areas: list[SvgArea] = []
     for n, (area, output_sections) in enumerate(areas):
         area_name = area.name.strip('"')
         area_short = utils.ellipsise_templates(area_name)
@@ -89,15 +112,7 @@ def svg(
 
         output_normed = normalize_sizes(output_sizes, 1, 1)
         output_rects = list(zip(squarify(output_normed, 0, 0, 1, 1), sorted_outputs))
-        indent(
-            f'<g id="{utils.xmlescape(area_name)}_group" class="area group" transform="'
-            f"translate({area_x} {area_y})",
-            f'scale({area_width} {area_height})">',
-        )
-        indent(
-            f'<view id="{utils.xmlescape(area_name)}" viewBox="'
-            f'{area_x} {area_y} {area_width} {area_height}"/>',
-        )
+        svg_output_sections: list[SvgOutputSection] = []
         for output_rect, output_section in output_rects:
             output_name = output_section.pretty_name()
             output_short = utils.ellipsise_templates(output_name)
@@ -122,24 +137,13 @@ def svg(
                 output_desc += "\n" + extra_output_desc
 
             output_colour = palette(output_section)
-            indent(
-                f'<g id="{utils.xmlescape(output_name)}_group" class="output group" transform="'
-                f'translate({output_rect["x"]} {output_rect["y"]})',
-                f'scale({output_rect["dx"]} {output_rect["dy"]})">',
-            )
-            indent(
-                f'<view id="{utils.xmlescape(output_name)}" viewBox="'
-                f'{area_x + area_width * output_rect["x"]}',
-                f'{area_y + area_height * output_rect["y"]}',
-                f'{area_width * output_rect["dx"]}',
-                f'{area_height * output_rect["dy"]}"/>',
-            )
             sorted_inputs = list(sorted(output_section.inputs, key=len, reverse=True))
             input_sizes = [
                 len(section) for section in sorted_inputs if len(section) > 0
             ]
             input_normed = normalize_sizes(input_sizes, 1, 1)
             input_rects = zip(squarify(input_normed, 0, 0, 1, 1), sorted_inputs)
+            svg_input_sections: list[SvgInputSection] = []
             for input_rect, input_section in input_rects:
                 input_name = input_section.pretty_name(output_section.pretty_name())
                 input_short = utils.ellipsise_templates(input_name)
@@ -172,73 +176,63 @@ def svg(
                     extra_input_desc = extra_tooltip(input_section)
                 if isinstance(extra_input_desc, str):
                     input_desc += "\n" + extra_input_desc
-
                 input_colour = palette(input_section)
-                indent(
-                    f'<g id="{utils.xmlescape(input_name)}_group" class="input group" transform="'
-                    f'translate({input_rect["x"]} {input_rect["y"]})',
-                    f'scale({input_rect["dx"]} {input_rect["dy"]})">',
-                )
-                indent(
-                    f'<view id="{utils.xmlescape(input_name)}" viewBox="'
-                    f'{area_x + area_width * output_rect["x"] + area_width * output_rect["dx"] * input_rect["x"]}',
-                    f'{area_y + area_height * output_rect["y"] + area_height * output_rect["dy"] * input_rect["y"]}',
-                    f'{area_width * output_rect["dx"] * input_rect["dx"]}',
-                    f'{area_height * output_rect["dy"] * input_rect["dy"]}"/>',
-                )
-                if input_overlay:
-                    indent(
-                        f'<a href="#{utils.xmlescape(input_name)}"><rect',
-                        f'id="{utils.xmlescape(input_name)}_rect"',
-                        f'class="input rect" fill="{input_colour}"',
-                        'x="0" y="0" width="1" height="1">'
-                        f"<title>{utils.xmlescape(input_desc)}</title></rect>",
+                svg_input_sections.append(
+                    SvgInputSection(
+                        name=input_name,
+                        short=input_short,
+                        description=input_desc,
+                        colour=input_colour,
+                        x=input_rect["x"],
+                        y=input_rect["y"],
+                        w=input_rect["dx"],
+                        h=input_rect["dy"],
                     )
-                    indent(
-                        '<text y="0.6" font-size="0.4" stroke-width="0.002"',
-                        'fill="#000000" stroke="#FFFFFF"',
-                        'textLength="1" lengthAdjust="spacingAndGlyphs">'
-                        f"<title>{utils.xmlescape(input_desc)}</title><tspan>"
-                        f"{utils.xmlescape(input_short)}</tspan></text></a>",
-                    )
-                indent("</g>")
-            if output_overlay:
-                indent(
-                    f'<a class="obscures" href="#{utils.xmlescape(output_name)}">'
-                    f'<rect id="{utils.xmlescape(output_name)}_rect"',
-                    f'class="output rect" fill="{output_colour}"',
-                    'x="0" y="0" width="1" height="1">',
-                    f"<title>{utils.xmlescape(output_desc)}</title></rect>",
                 )
-                indent(
-                    '<text y="0.6" font-size="0.4" stroke-width="0.002"',
-                    'fill="#000000" stroke="#FFFFFF"',
-                    'textLength="1" lengthAdjust="spacingAndGlyphs">'
-                    f"<title>{utils.xmlescape(output_desc)}</title><tspan>",
-                    f"{utils.xmlescape(output_short)}</tspan></text></a>",
+            svg_output_sections.append(
+                SvgOutputSection(
+                    name=output_name,
+                    short=output_short,
+                    description=output_desc,
+                    colour=output_colour,
+                    x=output_rect["x"],
+                    y=output_rect["y"],
+                    w=output_rect["dx"],
+                    h=output_rect["dy"],
+                    input_sections=tuple(svg_input_sections),
                 )
-            indent("</g>")
-        if area_overlay:
-            indent(
-                f'<a class="obscures" href="#{utils.xmlescape(area_name)}">'
-                f'<rect id="{utils.xmlescape(area_name)}_rect"',
-                f'class="area rect" fill="{area_colour}"',
-                f'x="0" y="0" width="1" height="1">',
-                f"<title>{utils.xmlescape(area_desc)}</title></rect>",
             )
-            indent(
-                f'<text y="0.6" font-size="0.4" stroke-width="0.002"',
-                'fill="#000000" stroke="#FFFFFF">'
-                f"<title>{utils.xmlescape(area_desc)}</title><tspan>"
-                f"{utils.xmlescape(area_short)}</tspan></text></a>",
+        svg_areas.append(
+            SvgArea(
+                name=area_name,
+                short=area_short,
+                description=area_desc,
+                colour=area_colour,
+                x=area_x,
+                y=area_y,
+                w=area_width,
+                h=area_height,
+                output_sections=tuple(svg_output_sections),
             )
-        indent("</g>")
-    js = Path(__file__).parent / "svg.js"
-    with js.open("rt") as fp:
-        indent("<script>")
-        indent("// <![CDATA[")
-        while line := fp.readline():
-            indent(line.rstrip())
-        indent("// ]]>")
-        indent("</script>")
-    indent("</svg>")
+        )
+    stream = env.get_template("squaremap.svg.jinja").stream(
+        asdict(
+            SvgOutput(
+                width=width,
+                height=height,
+                css=env.get_template("squaremap.css.jinja").render(),
+                js=env.get_template("squaremap.js.jinja").render(),
+                areas=tuple(svg_areas),
+                area_overlay=area_overlay,
+                input_overlay=input_overlay,
+                output_overlay=output_overlay,
+            )
+        )
+    )
+    # The `dump` is annotated as a `BinartIO` but if I don't pass in
+    # the encoding it doesn't call `encode` so it expects a StringIO
+    fp = t.cast(t.BinaryIO, file)
+    stream.dump(fp=fp)
+    # For some reason Jinja doesn't write the final new-line -- perhaps
+    # because `dump` expects a binary IO not a text IO
+    file.write("\n")

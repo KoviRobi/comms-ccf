@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{{width}}mm" height="{{height}}mm" viewBox="0 0 {{width}} {{height}}" preserveAspectRatio="none" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <pattern id="crosshatch" width="5" height="1" patternTransform="rotate(45)" patternUnits="userSpaceOnUse" preserveAspectRatio="xMidYMid">
+            <rect width="1" height="1" fill="#000000"/>
+        </pattern>
+    </defs>
+    <style>
+    {{css}}
+    </style>
+    <rect width="{{width}}" height="{{height}}" fill="url(#crosshatch)"/>
+    {% for area in areas -%}
+    <g id="{{area.name}}_group" class="area group" transform="translate({{area.x}} {{area.y}}) scale({{area.w}} {{area.h}})">
+        <view id="{{area.name}}" viewBox="{{area.x}} {{area.y}} {{area.w}} {{area.h}}"/>
+        {% for output in area.output_sections -%}
+        <g id="{{output.name}}_group" class="output group" transform="translate({{output.x}} {{output.y}}) scale({{output.w}} {{output.h}})">
+            {% set absX = area.x + area.w * output.x -%}
+            {%- set absY = area.y + area.h * output.y -%}
+            {%- set absW = area.w * output.w -%}
+            {%- set absH = area.h * output.h -%}
+            <view id="{{output.name}}" viewBox="{{absX}} {{absY}} {{absW}} {{absH}}"/>
+            {% for input in output.input_sections -%}
+            <g id="{{input.name}}_group" class="input group" transform="translate({{input.x}} {{input.y}}) scale({{input.w}} {{input.h}})">
+                {% set absX = area.x + area.w * output.x + area.w * output.w * input.x -%}
+                {%- set absY = area.y + area.h * output.y + area.h * output.h * input.y -%}
+                {%- set absW = area.w * output.w * input.w -%}
+                {%- set absH = area.h * output.h * input.h -%}
+                <view id="{{input.name}}" viewBox="{{absX}} {{absY}} {{absW}} {{absH}}"/>
+                {% if input_overlay -%}
+                <a href="#{{input.name}}">
+                    <rect id="{{input.name}}_rect" class="input rect" fill="{{input.colour}}" x="0" y="0" width="1" height="1">
+                        <title>{{input.description}}</title>
+                    </rect>
+                    <text y="0.6" font-size="0.4" stroke-width="0.002" fill="#000000" stroke="#FFFFFF" textLength="1" lengthAdjust="spacingAndGlyphs">
+                        <title>{{input.description}}</title>
+                        <tspan>{{input.short}}</tspan>
+                    </text>
+                </a>
+                {%- endif %}
+            </g>
+            {% endfor -%}
+            {%- if output_overlay -%}
+            <a class="obscures" href="#{{output.name}}">
+                <rect id="{{output.name}}_rect" class="output rect" fill="{{output.colour}}" x="0" y="0" width="1" height="1">
+                    <title>{{output.description}}</title>
+                </rect>
+                <text y="0.6" font-size="0.4" stroke-width="0.002" fill="#000000" stroke="#FFFFFF" textLength="1" lengthAdjust="spacingAndGlyphs">
+                    <title>{{output.description}}</title>
+                    <tspan>{{output.short}}</tspan>
+                </text>
+            </a>
+            {%- endif %}
+        </g>
+        {% endfor -%}
+        {%- if area_overlay -%}
+        <a class="obscures" href="#{{area.name}}">
+            <rect id="{{area.name}}_rect" class="area rect" fill="{{area.colour}}" x="0" y="0" width="1" height="1">
+                <title>{{area.description}}</title>
+            </rect>
+            <text y="0.6" font-size="0.4" stroke-width="0.002" fill="#000000" stroke="#FFFFFF">
+                <title>{{area.description}}</title>
+                <tspan>{{area.short}}</tspan>
+            </text>
+        </a>
+        {%- endif %}
+    </g>
+    {% endfor -%}
+    <script>
+    {{js}}
+    </script>
+</svg>

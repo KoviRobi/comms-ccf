@@ -10,39 +10,6 @@ import sys
 import typing as t
 
 
-def indent(
-    *args: str,
-    level: int = 1,
-    file: t.TextIO = sys.stdout,
-    strip: int = 0,
-    tabstop: int = 8,
-):
-    """
-    Print an indent corresponding to the current python indent.
-    If args is specified, it writes each to the file, and then a newline.
-    """
-    frame = inspect.currentframe()
-    context = None
-    match = None
-    while frame is not None and level > 0:
-        frame = frame.f_back
-        level -= 1
-    if frame is not None:
-        context = inspect.getframeinfo(frame).code_context
-    if context is not None and len(context) > 0:
-        match = re.match(r"^\s*", context[0])
-    if match is not None:
-        file.write(match[0].replace("\t", " " * tabstop)[strip:])
-    # No indent
-    if args != []:
-        sep = ""
-        for arg in args:
-            file.write(sep)
-            file.write(arg)
-            sep = " "
-        file.write("\n")
-
-
 def simplify_std_templates(symbol: str):
     for char in [
         ("char", ""),

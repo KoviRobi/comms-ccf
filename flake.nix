@@ -32,6 +32,7 @@
             pkgs.python3.pkgs.intervaltree
             pkgs.python3.pkgs.cxxfilt
             pkgs.python3.pkgs.junit2html
+            pkgs.python3.pkgs.jinja2
           ]
           ++ pkgs.lib.optionals demo [
             # FreeRTOSDemo
