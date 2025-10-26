@@ -26,7 +26,7 @@
             pkgs.python3.pkgs.pyyaml
             pkgs.python3.pkgs.hypothesis
             pkgs.python3.pkgs.cobs
-            pkgs.python3.pkgs.cbor
+            pkgs.python3.pkgs.cbor2
             pkgs.python3.pkgs.fnv-hash-fast
             pkgs.python3.pkgs.squarify
             pkgs.python3.pkgs.intervaltree

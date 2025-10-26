@@ -10,7 +10,7 @@ from inspect import Parameter, signature
 from random import randint
 from textwrap import indent
 
-from cbor import dumps, loads
+from cbor2 import dumps, loads
 
 from comms_ccf.channel import Channel, Channels
 from comms_ccf.transport import DEFAULT_TIMEOUT
