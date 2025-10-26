@@ -217,3 +217,6 @@ supports many types (more than I end up using).
 - [`DEFERRED_FORMATTING`](#DEFERRED_FORMATTING) (or host-side
 formatting) means you can avoid doing `printf` on the microcontroller,
 which might save some code space.
+- [`INLINE_VTABLE`](#INLINE_VTABLE) is an experiment not yet fully
+explored (the increase in BSS size indicates I have forgotten a `const`
+somewhere).
