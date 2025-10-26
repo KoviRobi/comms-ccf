@@ -10,7 +10,7 @@ import sys
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Protocol
 
 try:
     import readline
@@ -21,6 +21,11 @@ except ModuleNotFoundError:
 
 
 history_file = Path.home() / ".cache" / "comms-ccf_history"
+
+
+class Console(Protocol):
+    async def input(self, *args, **kwargs) -> str: ...
+    async def print(self, *args, **kwargs) -> None: ...
 
 
 class Stdio:
@@ -142,7 +147,7 @@ async def script(script_file: Path, locals):
         return errors
 
 
-async def repl(io, locals, debug=False):
+async def repl(console: Console, locals, debug=False):
     if readline and rlcompleter:
         completer = rlcompleter.Completer(namespace=locals)
         readline.set_completer(completer.complete)
@@ -158,7 +163,7 @@ async def repl(io, locals, debug=False):
 
     while True:
         try:
-            line = await io.input("in>  ")
+            line = await console.input("in>  ")
             line = line.strip()
             if readline:
                 readline.append_history_file(1000, str(history_file))
@@ -167,8 +172,8 @@ async def repl(io, locals, debug=False):
         if not line:  # Empty line
             continue
         try:
-            io.print("out>", await eval_expr(line, locals, debug))
+            await console.print("out>", await eval_expr(line, locals, debug))
         except Exception as e:
-            await io.print(traceback.format_exc())
+            await console.print(traceback.format_exc())
             if debug:
                 pdb.post_mortem(e.__traceback__)

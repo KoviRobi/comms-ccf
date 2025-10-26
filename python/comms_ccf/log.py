@@ -4,6 +4,7 @@ Simple background logging task
 
 import difflib
 import io
+import typing as t
 from enum import Enum, auto
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import cbor2
 from cobs.cobs import DecodeError
 
 from comms_ccf.channel import Channel, Channels
+from comms_ccf.repl import Console
 
 
 class LogLevel(Enum):
@@ -20,7 +22,11 @@ class LogLevel(Enum):
     Error = auto()
 
 
-async def print_logs(channels: Channels, expect_logs: Path | None = None):
+async def print_logs(
+    channels: Channels,
+    output: t.Callable[[str, str, str], t.Awaitable[None]],
+    expect_logs: Path | None = None,
+):
     channels.open_channel(Channel.Log)
 
     expected_logs = None
@@ -53,9 +59,9 @@ async def print_logs(channels: Channels, expect_logs: Path | None = None):
                 formatted = msg.decode() % (*args,)
             except Exception:
                 formatted = f"Error formatting log: {repr(msg)}"
-            print(level, module, formatted)
             if expected_logs is not None:
                 got_logs.append(f"{level} {module} {formatted}\n")
+            await output(level, module, formatted)
         except (TimeoutError, DecodeError):
             pass
         except EOFError:

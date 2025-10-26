@@ -21,6 +21,7 @@ from asyncio import (
 )
 from enum import IntEnum
 
+from comms_ccf.repl import Console
 from comms_ccf.transport import DEFAULT_TIMEOUT, Transport
 
 
@@ -30,11 +31,14 @@ class Channel(IntEnum):
 
 
 class Channels:
-    def __init__(self, transport: Transport, loop=get_event_loop()) -> None:
+    def __init__(
+        self, transport: Transport, console: Console, loop=get_event_loop()
+    ) -> None:
         self._transport = transport
         self._channels: dict[int, Queue[bytes] | None] = {}
         self._loop = loop
         self._exc: None | BaseException = None
+        self._console = console
 
     def open_channel(self, channel: int, maxsize=0):
         queue = self._channels.get(channel)
@@ -45,15 +49,17 @@ class Channels:
         while True:
             try:
                 chan, data = await self._transport.recv()
-                queue = self._channels.get(chan)
-                if queue is not None:
+                queue: None | False | Queue = self._channels.get(chan, False)
+                if queue:
                     await queue.put(data)
-                else:
+                elif queue is not None:
                     name = chan
                     if chan in Channel:
                         name = Channel(chan).name
-                    print("Dropping channel", name, "data", data)
-                    print("future messages ignored on channel", name)
+                    await self._console.print("Dropping channel", name, "data", data)
+                    await self._console.print(
+                        "future messages ignored on channel", name
+                    )
                     self._channels[chan] = None
             except TimeoutError:
                 pass
@@ -64,8 +70,8 @@ class Channels:
                         queue.shutdown(immediate=False)
                 break
             except Exception as e:
-                print("Exception in channel", str(e) or repr(e))
-                traceback.print_exception(e)
+                await self._console.print("Exception in channel", str(e) or repr(e))
+                await self._console.print(traceback.format_exception(e))
                 if debug:
                     pdb.post_mortem(e.__traceback__)
 
