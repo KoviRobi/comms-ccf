@@ -202,3 +202,5 @@ supports many types (more than I end up using).
 ## Tweaks/defines
 - `DEFERRED_FORMATTING` (or host-side formatting) means you can avoid
 doing `printf` on the micro, which might save some code space.
+- `INLINE_VTABLE` is a micro-optimisation not yet fully explored (the
+increase in BSS size indicates I have forgotten a `const` somewhere).

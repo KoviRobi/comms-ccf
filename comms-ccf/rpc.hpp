@@ -159,10 +159,10 @@ public:
         return false;
     }
 private:
-    const char * name;
-    const char * doc;
-    std::array<const char *, sizeof...(Args)> argNames;
-    Fun ptr;
+    const char * const name;
+    const char * const doc;
+    const std::array<const char *, sizeof...(Args)> argNames;
+    const Fun ptr;
 };
 
 template<typename... Calls>
@@ -174,9 +174,9 @@ public:
       calls{
           [&]<size_t... Idx>(std::index_sequence<Idx...>)
           {
-              return std::array<std::reference_wrapper<NonTemplatedCall>, sizeof...(Calls)>{
-                  (std::reference_wrapper<NonTemplatedCall>{
-                  *static_cast<NonTemplatedCall *>(&std::get<Idx>(tuple))})...
+              return std::array<const std::reference_wrapper<const NonTemplatedCall>, sizeof...(Calls)>{
+                  (std::reference_wrapper<const NonTemplatedCall>{
+                  *static_cast<const NonTemplatedCall *>(&std::get<Idx>(tuple))})...
               };
           }(std::index_sequence_for<Calls...>{})
       } { }
@@ -184,9 +184,9 @@ public:
     bool schema(std::span<uint8_t> & buf) const
     {
         Cbor::Sequence<Cbor::Major::Array> seq(buf, sizeof...(Calls));
-        for (auto & c : calls)
+        for (const auto & c : calls)
         {
-            auto & call = c.get();
+            const auto & call = c.get();
             if (!call.schema(self_app(call) seq))
             {
                 debugf(WARN "Schema failed to encode (buf size %zu)" END LOGLEVEL_ARGS, buf.size());
@@ -204,7 +204,7 @@ public:
         }
         else if (n < sizeof...(Calls) + 1)
         {
-            auto & call = calls[n-1].get();
+            const auto & call = calls[n-1].get();
             return call.call(self_app(call) args, ret);
         }
         else
@@ -214,8 +214,8 @@ public:
         }
     }
 
-    std::tuple<Calls...> tuple;
-    std::array<std::reference_wrapper<NonTemplatedCall>, sizeof...(Calls)> calls;
+    const std::tuple<const Calls...> tuple;
+    const std::array<const std::reference_wrapper<const NonTemplatedCall>, sizeof...(Calls)> calls;
 };
 
 // This is a header, undefine the debugf macro
