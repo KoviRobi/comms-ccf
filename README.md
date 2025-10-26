@@ -41,7 +41,7 @@ in properly:
 3. [ ] Other protocols such as ~logging~ or streaming sensor results
 not yet demonstrated.
    1. [X] Basic logging done.
-   2. [ ] Deferred format logging to avoid pulling in printf (and compare
+   2. [X] Deferred format logging to avoid pulling in printf (and compare
    space difference).
    3. [ ] Only sending pointers to rodata string constants.
    4. [ ] Streaming events to plot, e.g. ADC readings (though maybe random
@@ -83,8 +83,9 @@ A summary of the resurce use is copied below from the
 | Add `sub` call, similar to `add`       | [14.86KiB (+60)][.text4]      | [5.70KiB (+28)][.bss4]      | 356B (no change)  |
 | Add `greet` call                       | [15.16KiB (+308)][.text5]     | [5.72KiB (+24)][.bss5]      | 356B (no change)  |
 | Add `readm_mem` and `write_mem` calls  | [16.55KiB (+1.39Ki)][.text6]  | [5.78KiB (+56)][.bss6]      | 356B (no change)  |
-| Add test log task                      | [20.64KiB (+4.09Ki)][.text7]  | [6.86KiB (+1.09Ki)][.bss7]  | 356B (no change)  |
-| Inline vtable                          | [20.61KiB (-32)][.text8]      | [6.89KiB (+24)][.bss8]      | 356B (no change)  |
+| Add test log task                      | [20.66KiB (+4.11Ki)][.text7]  | [6.86KiB (+1.09Ki)][.bss7]  | 356B (no change)  |
+| Inline vtable                          | [20.62KiB (-32)][.text8]      | [6.89KiB (+24)][.bss8]      | 356B (no change)  |
+| Deferred formatting                    | [19.71KiB (-932)][.text9]     | [6.86KiB (-24)][.bss9]      | 356B (no change)  |
 
 [.text1]: https://kovirobi.github.io/comms-ccf/compare.0-1.svg#.text
 [.text2]: https://kovirobi.github.io/comms-ccf/compare.1-2.svg#.text
@@ -94,6 +95,7 @@ A summary of the resurce use is copied below from the
 [.text6]: https://kovirobi.github.io/comms-ccf/compare.5-6.svg#.text
 [.text7]: https://kovirobi.github.io/comms-ccf/compare.6-7.svg#.text
 [.text8]: https://kovirobi.github.io/comms-ccf/compare.7-8.svg#.text
+[.text9]: https://kovirobi.github.io/comms-ccf/compare.8-9.svg#.text
 [.bss1]: https://kovirobi.github.io/comms-ccf/compare.0-1.svg#.bss
 [.bss2]: https://kovirobi.github.io/comms-ccf/compare.1-2.svg#.bss
 [.bss3]: https://kovirobi.github.io/comms-ccf/compare.2-3.svg#.bss
@@ -102,6 +104,7 @@ A summary of the resurce use is copied below from the
 [.bss6]: https://kovirobi.github.io/comms-ccf/compare.5-6.svg#.bss
 [.bss7]: https://kovirobi.github.io/comms-ccf/compare.6-7.svg#.bss
 [.bss8]: https://kovirobi.github.io/comms-ccf/compare.7-8.svg#.bss
+[.bss9]: https://kovirobi.github.io/comms-ccf/compare.8-9.svg#.bss
 
 <!-- Table ends here -->
 
@@ -193,3 +196,7 @@ structured data is necessary.
 
 I chose CBOR because it is easy to encode/decode into a compact format,
 supports many types (more than I end up using).
+
+## Tweaks/defines
+- `DEFERRED_FORMATTING` (or host-side formatting) means you can avoid
+doing `printf` on the micro, which might save some code space.

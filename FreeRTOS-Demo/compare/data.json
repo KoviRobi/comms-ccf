@@ -26,5 +26,9 @@
   {
     "summary": "Inline vtable",
     "defines": "INLINE_VTABLE"
+  },
+  {
+    "summary": "Deferred formatting",
+    "defines": "DEFERRED_FORMATTING"
   }
 ]

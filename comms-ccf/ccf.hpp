@@ -10,6 +10,7 @@ buffer) together to be able to do RPC calls.
 #pragma once
 
 #include "circular_buffer.hpp"
+#include "cbor.hpp"
 #include "cobs.hpp"
 #include "fnv1a.hpp"
 
@@ -245,11 +246,15 @@ public:
     /// Log some data. Returns the number of bytes logged, or nullopt
     /// if it failed to log.
     ///
-    /// TODO: Deferred formatting
     /// TODO: Optionally just send the format string pointer (if it is
     /// in .rodata) and the client can read it from the ELF file (or
     /// download it separately)
+#if defined(DEFERRED_FORMATTING)
+    template <typename... Args>
+    std::optional<uint32_t> log(LogLevel level, uint8_t module, std::string_view fmt, Args && ... args)
+#else
     std::optional<uint32_t> log(LogLevel level, uint8_t module, const char * fmt, ...)
+#endif
     {
         if (module > (1 << 5) - 1)
         {
@@ -258,20 +263,31 @@ public:
         uint8_t initialByte = (static_cast<uint8_t>(level) << 5) | module;
         std::span<uint8_t> span{pktBuf};
         span[0] = initialByte;
+        // Space for length
+        const auto start = span.begin() + 2;
+#if defined(DEFERRED_FORMATTING)
+        const auto written = std::distance(start, std::ranges::copy(fmt, start).out);
+        auto rest = span.subspan(2 + written);
+        (Cbor::Cbor<Args>::encode(std::forward<Args>(args), rest), ...);
+        const auto end = rest.begin();
+#else
         va_list args;
         va_start(args, fmt);
         int written = vsnprintf(
-            reinterpret_cast<char *>(span.data()) + sizeof(initialByte),
-            span.size() - sizeof(initialByte),
+            reinterpret_cast<char *>(&*start),
+            std::distance(start, span.end()),
             fmt,
             args
         );
         va_end(args);
+        const auto end = start + written;
+#endif
+        span[1] = written;
         if (written < 0)
         {
             return {};
         }
-        span = span.first(sizeof(initialByte) + written);
+        span = span.first(std::distance(span.begin(), end));
         if (send(Channels::Log, span))
         {
             return {written};
