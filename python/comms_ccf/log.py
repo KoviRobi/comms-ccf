@@ -4,6 +4,8 @@ Simple background logging task
 
 import difflib
 import io
+import typing as t
+from asyncio import AbstractEventLoop, Future
 from enum import Enum, auto
 from pathlib import Path
 
@@ -20,7 +22,20 @@ class LogLevel(Enum):
     Error = auto()
 
 
-async def print_logs(channels: Channels, expect_logs: Path | None = None):
+logging_in_progress: Future | None = None
+
+
+async def flush_logs():
+    if logging_in_progress:
+        await logging_in_progress
+
+
+async def print_logs(
+    loop: AbstractEventLoop,
+    channels: Channels,
+    output: t.Callable[[str, str, str], t.Awaitable[None]],
+    expect_logs: Path | None = None,
+):
     channels.open_channel(Channel.Log)
 
     expected_logs = None
@@ -34,7 +49,9 @@ async def print_logs(channels: Channels, expect_logs: Path | None = None):
 
     while True:
         try:
+            global logging_in_progress
             data = await channels.recv(Channel.Log)
+            logging_in_progress = loop.create_future()
             if len(data) < 2:
                 continue
             level = LogLevel(data[0] >> 5).name
@@ -53,12 +70,14 @@ async def print_logs(channels: Channels, expect_logs: Path | None = None):
                 formatted = msg.decode() % (*args,)
             except Exception:
                 formatted = f"Error formatting log: {repr(msg)}"
-            print(level, module, formatted)
+            await output(level, str(module), formatted)
+            if logging_in_progress:
+                logging_in_progress.set_result(None)
             if expected_logs is not None:
                 got_logs.append(f"{level} {module} {formatted}\n")
         except (TimeoutError, DecodeError):
             pass
-        except EOFError:
+        except EOFError as e:
             if expected_logs is not None:
                 assert expected_logs == got_logs, "Logs not as expected:\n" + "".join(
                     difflib.unified_diff(
@@ -68,4 +87,6 @@ async def print_logs(channels: Channels, expect_logs: Path | None = None):
                         tofile="Got",
                     )
                 )
-            raise
+                if logging_in_progress:
+                    logging_in_progress.set_exception(e)
+            raise e

@@ -2,14 +2,16 @@
 Keep track of background tasks so their exceptions can be read.
 """
 
+import pdb
 import traceback
 from asyncio import AbstractEventLoop, Task, as_completed
 
 
 class BackgroundTasks:
-    def __init__(self, loop: AbstractEventLoop) -> None:
+    def __init__(self, loop: AbstractEventLoop, debug: bool) -> None:
         self._tasks: set[Task] = set()
         self._loop = loop
+        self._debug = debug
         self.suppress_exceptions: set[type] = set()
 
     def add(self, async_fn, *args, **kwargs) -> Task:
@@ -41,6 +43,7 @@ class BackgroundTasks:
             exc = task.exception()
         except BaseException as e:
             exc = e
-        finally:
-            if exc and not any(isinstance(exc, ty) for ty in self.suppress_exceptions):
-                traceback.print_exception(exc)
+        if exc and not any(isinstance(exc, ty) for ty in self.suppress_exceptions):
+            if self._debug:
+                pdb.post_mortem(exc.__traceback__)
+            traceback.print_exception(exc)

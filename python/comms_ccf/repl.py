@@ -13,7 +13,10 @@ import sys
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncGenerator, Protocol
+from typing import AsyncGenerator
+
+from comms_ccf.log import flush_logs
+from comms_ccf.types import Console
 
 try:
     import readline
@@ -122,6 +125,7 @@ class Command:
         finally:
             outIO.flush()
             errIO.flush()
+            await flush_logs()
             (sys.stdin, sys.stdout, sys.stderr) = stdin, stdout, stderr
 
         for name, expected, got in [
@@ -177,7 +181,7 @@ async def script(script_file: Path, locals):
         return errors
 
 
-async def repl(console, locals, debug=False):
+async def repl(console: Console, locals, debug=False):
     if readline and rlcompleter:
         completer = rlcompleter.Completer(namespace=locals)
         readline.set_completer(completer.complete)
@@ -204,7 +208,7 @@ async def repl(console, locals, debug=False):
         try:
             result = await eval_expr(line, locals)
             locals["_"] = result
-            await console.print("out>", await eval_expr(line, locals))
+            await console.print("out>", result)
         except Exception as e:
             await console.print(traceback.format_exc())
             if debug:
