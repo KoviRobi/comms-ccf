@@ -1,18 +1,17 @@
-#include "log.hpp"
+#include "log-task.h"
 
-#include "comms-ccf.hpp"
+/// Demo headers
+#include "ccf-config.hpp"
+#include "ccf-uart0.h"
 
+/// Comms-CCF headers
 #include <ccf.hpp>
-
-#include "hw_types.h"
-#include "hw_memmap.h"
-#include "uart.h"
-
-#include <stdio.h>
-#include <string.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
+
+#include <stdio.h>
+#include <string.h>
 
 static StackType_t logStack[256];
 static StaticTask_t logTcb;
@@ -28,7 +27,7 @@ static void logTask(void *)
     }
 }
 
-void createLogTask()
+void commsCcfStartLogTask()
 {
     xTaskCreateStatic(
         logTask,

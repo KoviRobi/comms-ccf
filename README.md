@@ -78,16 +78,16 @@ A summary of the resurce use is copied below from the
 
 | Summary                                | .text                         | .bss                        | .data             |
 |----------------------------------------|-------------------------------|-----------------------------|-------------------|
-| No Comms-CCF                           | 11.15KiB                      | 3.53KiB                     | 356B              |
-| Add Comms-CCF, no RPC handlers         | [13.21KiB (+2.06Ki)][.text1]  | [5.62KiB (+2.09Ki)][.bss1]  | 356B (no change)  |
-| Add version RPC call                   | [14.09KiB (+900)][.text2]     | [5.64KiB (+24)][.bss2]      | 356B (no change)  |
-| Add `add` call                         | [14.80KiB (+728)][.text3]     | [5.67KiB (+28)][.bss3]      | 356B (no change)  |
-| Add `sub` call, similar to `add`       | [14.86KiB (+60)][.text4]      | [5.70KiB (+28)][.bss4]      | 356B (no change)  |
-| Add `greet` call                       | [15.16KiB (+308)][.text5]     | [5.72KiB (+24)][.bss5]      | 356B (no change)  |
-| Add `readm_mem` and `write_mem` calls  | [16.55KiB (+1.39Ki)][.text6]  | [5.78KiB (+56)][.bss6]      | 356B (no change)  |
-| Add test log task                      | [20.66KiB (+4.11Ki)][.text7]  | [6.86KiB (+1.09Ki)][.bss7]  | 356B (no change)  |
-| Inline vtable                          | [20.62KiB (-32)][.text8]      | [6.89KiB (+24)][.bss8]      | 356B (no change)  |
-| Deferred formatting                    | [19.71KiB (-932)][.text9]     | [6.86KiB (-24)][.bss9]      | 356B (no change)  |
+| No Comms-CCF                           | 11.45KiB                      | 3.54KiB                     | 356B              |
+| Add Comms-CCF, no RPC handlers         | [13.14KiB (+1.68Ki)][.text1]  | [5.62KiB (+2.09Ki)][.bss1]  | 356B (no change)  |
+| Add version RPC call                   | [14.05KiB (+932)][.text2]     | [5.64KiB (+24)][.bss2]      | 356B (no change)  |
+| Add `add` call                         | [14.77KiB (+744)][.text3]     | [5.67KiB (+28)][.bss3]      | 356B (no change)  |
+| Add `sub` call, similar to `add`       | [14.83KiB (+60)][.text4]      | [5.70KiB (+28)][.bss4]      | 356B (no change)  |
+| Add `greet` call                       | [15.13KiB (+304)][.text5]     | [5.72KiB (+24)][.bss5]      | 356B (no change)  |
+| Add `readm_mem` and `write_mem` calls  | [16.52KiB (+1.39Ki)][.text6]  | [5.78KiB (+56)][.bss6]      | 356B (no change)  |
+| Add test log task                      | [20.63KiB (+4.11Ki)][.text7]  | [6.86KiB (+1.09Ki)][.bss7]  | 356B (no change)  |
+| Inline vtable                          | [20.61KiB (-28)][.text8]      | [6.89KiB (+24)][.bss8]      | 356B (no change)  |
+| Deferred formatting                    | [19.69KiB (-936)][.text9]     | [6.86KiB (-24)][.bss9]      | 356B (no change)  |
 
 [.text1]: https://kovirobi.github.io/comms-ccf/compare.0-1.svg#.text
 [.text2]: https://kovirobi.github.io/comms-ccf/compare.1-2.svg#.text

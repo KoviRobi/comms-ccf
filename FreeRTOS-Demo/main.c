@@ -58,8 +58,9 @@
 #include "uart.h"
 #include "interrupt.h"
 
-#include "comms-ccf.hpp"
-#include "log.hpp"
+#include "ccf-uart0.h"
+#include "log-task.h"
+#include "rpc-task.h"
 
 /*-----------------------------------------------------------*/
 
@@ -84,29 +85,6 @@ void vApplicationIdleHook(void)
     asm volatile("wfi");
 }
 
-static void vUart0Int( void )
-{
-    const unsigned long interrupt = UARTIntStatus(UART0_BASE, pdTRUE);
-    UARTIntClear(UART0_BASE, interrupt);
-    if (interrupt & UART_INT_RX)
-    {
-        while (UARTCharsAvail(UART0_BASE))
-        {
-            const uint8_t byte = UARTCharGetNonBlocking(UART0_BASE);
-            commsCcfRx( byte );
-        }
-    }
-    if (interrupt & UART_INT_TX)
-    {
-        commsCcfTxDone();
-    }
-}
-
-void commsCcfTx( uint8_t byte )
-{
-    UARTCharPutNonBlocking( UART0_BASE, byte );
-}
-
 /*-----------------------------------------------------------*/
 
 /*************************************************************************
@@ -127,11 +105,11 @@ int main( void )
 
     /* Start the standard demo tasks. */
 #if !defined(CCF_FEATURES) || CCF_FEATURES > 0
-    commsCcfStartTasks();
+    commsCcfStartRpcTask();
 #endif
 
 #if !defined(CCF_FEATURES) || CCF_FEATURES > 6
-    createLogTask();
+    commsCcfStartLogTask();
 #endif
 
     /* Uncomment the following line to configure the high frequency interrupt
@@ -169,9 +147,9 @@ void prvSetupHardware( void )
 
     UARTConfigSet(UART0_BASE, 115200,
                   UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE);
-    UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX1_8);
-    UARTIntRegister( UART0_BASE, vUart0Int );
-    IntPrioritySet(INT_UART0, 0x40);
+    UARTFIFOLevelSet( UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX1_8 );
+    UARTIntRegister( UART0_BASE, commsCcfUartIsr );
+    IntPrioritySet( INT_UART0, 0x40 );
     UARTIntEnable( UART0_BASE, UART_INT_RX | UART_INT_TX );
 
     UARTEnable( UART0_BASE );
