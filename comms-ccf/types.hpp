@@ -8,9 +8,10 @@ is the smallest type required to hold it.
 */
 #pragma once
 
-#include <bit>
 #include <stddef.h>
 #include <stdint.h>
+
+#include <bit>
 
 template<size_t N>
 struct Uint{};
