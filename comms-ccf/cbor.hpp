@@ -190,6 +190,7 @@ HTML that doesn't matter):
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <algorithm>
 #include <array>
@@ -573,8 +574,7 @@ typedef _Float16 half;
     {
         static bool encode(std::string_view str, std::span<uint8_t> & buf)
         {
-            if (!::Cbor::encode<size_t>(
-                Major::Utf8, str.size(), buf))
+            if (!::Cbor::encode<size_t>(Major::Utf8, str.size(), buf))
             {
                 return false;
             }
@@ -585,6 +585,51 @@ typedef _Float16 half;
                     return false;
                 }
                 buf[0] = c;
+                buf = buf.subspan(1);
+            }
+            return true;
+        }
+    };
+
+    template<>
+    struct Cbor<const char *>
+    {
+        static bool encode(const char * str, std::span<uint8_t> & buf)
+        {
+            const size_t size = strlen(str);
+            if (!::Cbor::encode<size_t>(Major::Utf8, size, buf))
+            {
+                return false;
+            }
+            for (size_t i = 0; i < size; ++i)
+            {
+                if (buf.size() == 0)
+                {
+                    return false;
+                }
+                buf[0] = str[i];
+                buf = buf.subspan(1);
+            }
+            return true;
+        }
+    };
+
+    template<size_t size>
+    struct Cbor<const char (&)[size]>
+    {
+        static bool encode(const char (&str)[size], std::span<uint8_t> & buf)
+        {
+            if (!::Cbor::encode<size_t>(Major::Utf8, size, buf))
+            {
+                return false;
+            }
+            for (size_t i = 0; i < size; ++i)
+            {
+                if (buf.size() == 0)
+                {
+                    return false;
+                }
+                buf[0] = str[i];
                 buf = buf.subspan(1);
             }
             return true;
