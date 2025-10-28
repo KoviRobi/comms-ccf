@@ -42,6 +42,7 @@ class StreamTransport:
         self._tx = tx
         self._rx = rx
         self._rxBuf = b""
+        self._done = False
         self._log = log_fp
 
     async def send(
@@ -64,8 +65,17 @@ class StreamTransport:
                     data = self._rxBuf[: idx + 1]
                     self._rxBuf = self._rxBuf[idx + 1 :]
                     break
+                elif self._done:
+                    assert (
+                        not self._rxBuf
+                    ), f"Non null-delimited data in buffer {self._rxBuf} after EOF"
+                    raise EOFError("Ran out of input")
                 else:
-                    self._rxBuf += await self._rx.read(MAX_PKT_SIZE)
+                    rxed = await self._rx.read(MAX_PKT_SIZE)
+                    if rxed == b"":
+                        data = b""
+                        self._done = True
+                    self._rxBuf += rxed
                     assert len(self._rxBuf) < MAX_PKT_SIZE, "Packet max size exceeded"
         if self._log:
             print(hexdump(data, "RX: "), file=self._log)
