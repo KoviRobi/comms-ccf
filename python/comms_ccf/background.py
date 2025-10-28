@@ -3,7 +3,7 @@ Keep track of background tasks so their exceptions can be read.
 """
 
 import traceback
-from asyncio import AbstractEventLoop, Task
+from asyncio import AbstractEventLoop, Task, as_completed
 
 
 class BackgroundTasks:
@@ -17,6 +17,22 @@ class BackgroundTasks:
         self._tasks.add(task)
         task.add_done_callback(self._discard)
         return task
+
+    def cancel(self):
+        for task in self._tasks:
+            task.cancel()
+
+    async def wait(self, timeout: float | None = None):
+        err = False
+        for res in as_completed(self._tasks, timeout=timeout):
+            try:
+                await res
+            except BaseException as exc:
+                # Handled by _discard, just need to know if we should err
+                if not any(isinstance(exc, ty) for ty in self.suppress_exceptions):
+                    err = True
+        if err:
+            raise SystemExit(1)
 
     def _discard(self, task: Task):
         self._tasks.discard(task)

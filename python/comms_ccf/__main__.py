@@ -8,7 +8,9 @@ import asyncio
 import signal
 import sys
 import time
+import typing as t
 from argparse import ArgumentParser
+from pathlib import Path
 
 from comms_ccf import rtt, serial, stdio, tcp
 from comms_ccf.background import BackgroundTasks
@@ -49,7 +51,11 @@ async def amain():
     rtt_parser.set_defaults(func=rtt.command)
 
     args = parser.parse_args()
-    async with args.func(args) as context:
+    func: t.Callable[
+        [t.Any],
+        t.AsyncContextManager[tuple[asyncio.StreamReader, asyncio.StreamWriter], t.Any],
+    ] = args.func
+    async with func(args) as context:
         rx, tx = context
 
         transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
@@ -67,6 +73,8 @@ async def amain():
                 try:
                     await rpc.discover()
                     break
+                except EOFError:
+                    raise  # No point in trying again
                 except Exception as e:
                     print("Failed to discover RPC:", str(e) or repr(e))
                     time.sleep(0.2)
@@ -89,6 +97,8 @@ async def amain():
 
         background_tasks.suppress_exceptions.add(EOFError)
         background_tasks.suppress_exceptions.add(asyncio.CancelledError)
+        tx.close()
+        await background_tasks.wait(timeout=5)
 
 
 def quit(*args, **kwargs):
