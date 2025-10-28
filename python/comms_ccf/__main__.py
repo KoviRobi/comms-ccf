@@ -62,29 +62,29 @@ async def amain():
         if args.log:
             background_tasks.add(print_logs, channels)
 
-        while True:
-            try:
-                await rpc.discover()
-                break
-            except Exception as e:
-                print("Failed to discover RPC:", str(e) or repr(e))
-                time.sleep(0.2)
-
-        locals = {k: v for k, v in rpc.methods().items()}
-        locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
-        locals["help"] = rpc.help
-        locals["hexdump"] = hexdump
-        locals["dir"] = dir
-
-        print("Use help(name=None) for discovered methods")
-        print("(optionally name to document just that method)")
-        if add := getattr(rpc, "add", None):
-            try:
-                print("E.g. add(2,3) ~>", await add(2, 3))
-            except Exception as e:
-                print("Exception in demo:", str(e) or repr(e))
-
         if args.repl:
+            while True:
+                try:
+                    await rpc.discover()
+                    break
+                except Exception as e:
+                    print("Failed to discover RPC:", str(e) or repr(e))
+                    time.sleep(0.2)
+
+            locals = {k: v for k, v in rpc.methods().items()}
+            locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
+            locals["help"] = rpc.help
+            locals["hexdump"] = hexdump
+            locals["dir"] = dir
+
+            print("Use help(name=None) for discovered methods")
+            print("(optionally name to document just that method)")
+            if add := getattr(rpc, "add", None):
+                try:
+                    print("E.g. add(2,3) ~>", await add(2, 3))
+                except Exception as e:
+                    print("Exception in demo:", str(e) or repr(e))
+
             await repl(Stdio(), locals, args.debug)
 
         background_tasks.suppress_exceptions.add(EOFError)
