@@ -15,8 +15,8 @@ import pdb
 from asyncio import (
     IncompleteReadError,
     Queue,
+    QueueShutDown,
     get_event_loop,
-    wait_for,
 )
 from enum import IntEnum
 
@@ -33,6 +33,7 @@ class Channels:
         self._transport = transport
         self._channels: dict[int, Queue[bytes] | None] = {}
         self._loop = loop
+        self._exc: None | BaseException = None
 
     def open_channel(self, channel: int, maxsize=0):
         queue = self._channels.get(channel)
@@ -55,9 +56,13 @@ class Channels:
                     self._channels[chan] = None
             except TimeoutError:
                 pass
-            except IncompleteReadError:
+            except (IncompleteReadError, EOFError) as e:
+                self._exc = e
+                for queue in self._channels.values():
+                    if queue is not None:
+                        queue.shutdown(immediate=False)
                 break
-            except Exception as e:
+            except BaseException as e:
                 print("Exception in channel", str(e) or repr(e))
                 if debug:
                     pdb.post_mortem(e.__traceback__)
@@ -70,5 +75,11 @@ class Channels:
     async def recv(self, channel: int, *, timeout: float = DEFAULT_TIMEOUT) -> bytes:
         queue = self._channels.get(channel)
         assert queue is not None, f"Must call open first on channel: {channel}"
-        result = await wait_for(queue.get(), timeout=timeout)
-        return result
+        try:
+            data = await queue.get()
+            return data
+        except QueueShutDown:
+            pass  # Don't nest the exception
+        if self._exc is not None:
+            raise self._exc
+        assert False, "Logic error: _exc and queue.shutdown not linked"
