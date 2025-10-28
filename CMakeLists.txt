@@ -65,6 +65,17 @@ add_build_and_test(
         -- stdio $<TARGET_FILE:rpc>
 )
 
+add_executable(rpc_inline_vtable test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_compile_definitions(rpc_inline_vtable PUBLIC INLINE_VTABLE)
+target_include_directories(rpc_inline_vtable PUBLIC comms-ccf/)
+add_build_and_test(
+    NAME rpc_inline_vtable_demo
+    DEPENDS rpc_inline_vtable
+    COMMAND
+        uv run comms-ccf --verbose --no-repl
+        -- stdio $<TARGET_FILE:rpc>
+)
+
 # Demo of logging
 add_executable(log test/log.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
 target_include_directories(log PUBLIC comms-ccf/)
