@@ -65,6 +65,29 @@ add_build_and_test(
         -- stdio $<TARGET_FILE:rpc>
 )
 
+# Demo of logging
+add_executable(log test/log.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_include_directories(log PUBLIC comms-ccf/)
+add_build_and_test(
+    NAME log_demo
+    DEPENDS log
+    COMMAND
+        uv run comms-ccf --no-repl
+        --expect-logs "${CMAKE_CURRENT_LIST_DIR}/test/log.expected"
+        -- stdio $<TARGET_FILE:log>
+)
+add_executable(log_deferred test/log.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_compile_definitions(log_deferred PUBLIC DEFERRED_FORMATTING)
+target_include_directories(log_deferred PUBLIC comms-ccf/)
+add_build_and_test(
+    NAME log_deferred_demo
+    DEPENDS log_deferred
+    COMMAND
+        uv run comms-ccf --verbose --no-repl
+        --expect-logs "${CMAKE_CURRENT_LIST_DIR}/test/log.expected"
+        -- stdio $<TARGET_FILE:log>
+)
+
 add_executable(rpc_debug test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
 target_include_directories(rpc_debug PUBLIC comms-ccf/)
 target_compile_definitions(rpc_debug PUBLIC

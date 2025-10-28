@@ -31,6 +31,7 @@ async def amain():
     parser.add_argument(
         "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
     )
+    parser.add_argument("--expect-logs", type=Path, help="Check logs against file")
     parser.add_argument(
         "--debug", "-d", action="store_true", help="Open debugger on exceptions"
     )
@@ -60,13 +61,15 @@ async def amain():
 
         transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
         loop = asyncio.get_event_loop()
-        background_tasks = BackgroundTasks(loop)
         channels = Channels(transport, loop)
-        background_tasks.add(channels.loop, args.debug)
         rpc = Rpc(channels)
 
+        background_tasks = BackgroundTasks(loop)
+        # First open the log channel before starting the channels loop
         if args.log:
-            background_tasks.add(print_logs, channels)
+            background_tasks.add(print_logs, channels, args.expect_logs)
+
+        background_tasks.add(channels.loop, args.debug)
 
         if args.repl:
             while True:

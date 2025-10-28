@@ -1,0 +1,4 @@
+Debug 0 debug int 0
+Info 1 debug float 1.000000
+Info 2 debug str two
+Info 3 debug str three

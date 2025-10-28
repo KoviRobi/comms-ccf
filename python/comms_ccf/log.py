@@ -2,8 +2,10 @@
 Simple background logging task
 """
 
+import difflib
 import io
 from enum import Enum, auto
+from pathlib import Path
 
 import cbor2
 from cobs.cobs import DecodeError
@@ -18,14 +20,24 @@ class LogLevel(Enum):
     Error = auto()
 
 
-async def print_logs(channels: Channels):
+async def print_logs(channels: Channels, expect_logs: Path | None = None):
     channels.open_channel(Channel.Log)
+
+    expected_logs = None
+    got_logs = []
+    if expect_logs is not None:
+        expected_logs = [
+            line
+            for line in expect_logs.open("rt")
+            if line != "\n" and not line.startswith("#")
+        ]
+
     while True:
         try:
             data = await channels.recv(Channel.Log)
             if len(data) < 2:
                 continue
-            level = data[0] >> 5
+            level = LogLevel(data[0] >> 5).name
             module = data[0] & 0x1F
             msgend = min(2 + data[1], len(data))
             msg = data[2:msgend]
@@ -42,5 +54,18 @@ async def print_logs(channels: Channels):
             except Exception:
                 formatted = f"Error formatting log: {repr(msg)}"
             print(level, module, formatted)
+            if expected_logs is not None:
+                got_logs.append(f"{level} {module} {formatted}\n")
         except (TimeoutError, DecodeError):
             pass
+        except EOFError:
+            if expected_logs is not None:
+                assert expected_logs == got_logs, "Logs not as expected:\n" + "".join(
+                    difflib.unified_diff(
+                        a=got_logs,
+                        b=expected_logs,
+                        fromfile="Got",
+                        tofile="Expected",
+                    )
+                )
+            raise
