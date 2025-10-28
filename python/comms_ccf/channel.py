@@ -12,7 +12,12 @@ using a queue instead of futures.
 """
 
 import pdb
-from asyncio import Future, IncompleteReadError, get_event_loop, shield, wait_for
+from asyncio import (
+    IncompleteReadError,
+    Queue,
+    get_event_loop,
+    wait_for,
+)
 from enum import IntEnum
 
 from comms_ccf.transport import DEFAULT_TIMEOUT, Transport
@@ -26,27 +31,21 @@ class Channel(IntEnum):
 class Channels:
     def __init__(self, transport: Transport, loop=get_event_loop()) -> None:
         self._transport = transport
-        self._channels: dict[int, Future[bytes] | None] = {}
+        self._channels: dict[int, Queue[bytes] | None] = {}
         self._loop = loop
 
-    def open_channel(self, channel: int):
-        if channel not in self._channels:
-            self._channels[channel] = self._loop.create_future()
+    def open_channel(self, channel: int, maxsize=0):
+        queue = self._channels.get(channel)
+        if queue is None:
+            self._channels[channel] = Queue(maxsize=maxsize)
 
     async def loop(self, debug=False):
         while True:
             try:
                 chan, data = await self._transport.recv()
-                if chan in self._channels:
-                    fut = self._channels[chan]
-                    if fut is None:
-                        continue
-                    if fut.done():
-                        fut = self._loop.create_future()
-                        fut.set_result(data)
-                        self._channels[chan] = fut
-                    else:
-                        fut.set_result(data)
+                queue = self._channels.get(chan)
+                if queue is not None:
+                    await queue.put(data)
                 else:
                     name = chan
                     if chan in Channel:
@@ -69,11 +68,7 @@ class Channels:
         await self._transport.send(channel, data, timeout=timeout)
 
     async def recv(self, channel: int, *, timeout: float = DEFAULT_TIMEOUT) -> bytes:
-        fut = self._channels.get(channel)
-        if fut is None:
-            fut = self._loop.create_future()
-            self._channels[channel] = fut
-        result = await wait_for(shield(fut), timeout=timeout)
-        fut = self._loop.create_future()
-        self._channels[channel] = fut
+        queue = self._channels.get(channel)
+        assert queue is not None, f"Must call open first on channel: {channel}"
+        result = await wait_for(queue.get(), timeout=timeout)
         return result
