@@ -30,4 +30,7 @@ async def command(args):
     assert proc.stdin is not None
     assert proc.stdout is not None
     yield (proc.stdout, proc.stdin)
-    proc.terminate()
+    try:
+        proc.terminate()
+    except ProcessLookupError:
+        pass  # Process already terminated
