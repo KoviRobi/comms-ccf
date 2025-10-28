@@ -86,7 +86,9 @@ async def amain():
 
         if args.repl:
             await repl(Stdio(), locals, args.debug)
-        background_tasks.suppress_exceptions = True
+
+        background_tasks.suppress_exceptions.add(EOFError)
+        background_tasks.suppress_exceptions.add(asyncio.CancelledError)
 
 
 def quit(*args, **kwargs):
