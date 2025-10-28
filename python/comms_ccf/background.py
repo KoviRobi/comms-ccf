@@ -11,10 +11,11 @@ class BackgroundTasks:
         self._loop = loop
         self.suppress_exceptions = False
 
-    def add(self, async_fn, *args, **kwargs):
-        channel_task = self._loop.create_task(async_fn(*args, **kwargs))
-        self._tasks.add(channel_task)
-        channel_task.add_done_callback(self._discard)
+    def add(self, async_fn, *args, **kwargs) -> Task:
+        task = self._loop.create_task(async_fn(*args, **kwargs))
+        self._tasks.add(task)
+        task.add_done_callback(self._discard)
+        return task
 
     def _discard(self, task: Task):
         self._tasks.discard(task)
