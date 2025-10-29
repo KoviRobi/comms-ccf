@@ -67,6 +67,7 @@ async def get_rtt_config(elf_or_address: None | Path) -> str:
             return f"SetRTTSearchRanges;{hex(int(start, 0))} {hex(int(end, 0))};"
         except ValueError:
             return f"SetRTTAddr;{hex(int(elf_or_address.name, 0))};"
+    assert False, "Unreachable"
 
 
 async def segger_rtt_client(
