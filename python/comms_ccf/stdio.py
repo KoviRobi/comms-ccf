@@ -25,7 +25,7 @@ async def command(args):
     assert executable.exists(), f"File {quote(str(executable))} doesn't exist"
 
     proc = await asyncio.create_subprocess_exec(
-        executable, *args.arguments, stdin=PIPE, stdout=PIPE
+        executable, *args.arguments, stdin=PIPE, stdout=PIPE, stderr=None,
     )
     assert proc.stdin is not None
     assert proc.stdout is not None

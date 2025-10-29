@@ -90,9 +90,15 @@ int main()
                     begin,
                     static_cast<size_t>(std::distance(begin, spanBegin))
                 };
+                fprintf(stderr, "Logging %zu", logData.size());
                 if (ccf.send(Channels::Log, logData))
                 {
+                    fprintf(stderr, " ok!\n");
                     scratchLogSpan = scratchLogBuf;
+                }
+                else
+                {
+                    fprintf(stderr, " error!\n");
                 }
             }
             else
