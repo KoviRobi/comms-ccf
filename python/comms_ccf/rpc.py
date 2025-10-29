@@ -3,6 +3,7 @@ Discover RPC functions and add the documentation/type hints from the
 schema.
 """
 
+import asyncio
 import pydoc
 import time
 import typing as t
@@ -26,20 +27,19 @@ class Rpc:
     async def __call__(
         self, n: int, args: t.Any, timeout: float = DEFAULT_TIMEOUT
     ) -> t.Any:
-        deadline = time.time() + timeout
-        seqNo = self._seqNo
-        self._seqNo = (self._seqNo + 1) & 0xFF
-        data = int.to_bytes(seqNo) + int.to_bytes(n) + dumps(args)
-        await self._channels.send(Channel.RPC, data, timeout=timeout)
-        while True:
-            timeout = deadline - time.time()
-            data = await self._channels.recv(Channel.RPC, timeout=timeout)
-            if data[0] != seqNo:
-                continue
-            function = data[1]
-            data = data[2:]
-            assert function == n, "Received response to a different function"
-            return loads(data)
+        async with asyncio.timeout(timeout):
+            seqNo = self._seqNo
+            self._seqNo = (self._seqNo + 1) & 0xFF
+            data = int.to_bytes(seqNo) + int.to_bytes(n) + dumps(args)
+            await self._channels.send(Channel.RPC, data, timeout=timeout)
+            while True:
+                data = await self._channels.recv(Channel.RPC, timeout=timeout)
+                if data[0] != seqNo:
+                    continue
+                function = data[1]
+                data = data[2:]
+                assert function == n, "Received response to a different function"
+                return loads(data)
 
     async def discover(self, timeout: float = DEFAULT_TIMEOUT):
         self._channels.open_channel(Channel.RPC)
