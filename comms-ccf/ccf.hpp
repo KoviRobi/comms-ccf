@@ -241,19 +241,52 @@ public:
         }
     }
 
-    /// **Not threadsafe** use a mutex
+    /// **Threadsafe** because it doesn't send the message, just formats
+    /// it to the buffer.
     ///
-    /// Log some data. Returns the number of bytes logged, or nullopt
-    /// if it failed to log.
+    /// Log some data to the buffer, but don't send it yet. Handy for
+    /// using in interrupts or other reentrant contexts (e.g. using it to
+    /// log from inside an RPC call). Returns the number of bytes written
+    /// to the buffer (all the bytes not just the formatted string),
+    /// or nullopt if it failed to log.
+    ///
+    /// Once it is safe, call `send(Channels::Log, span & dataInBuf)`
+    /// on the formatted data. This function changes the `span` to point
+    /// to the unused region of the buffer, once done (if it successfully
+    /// logged, otherwise it leaves it in place).
     ///
     /// TODO: Optionally just send the format string pointer (if it is
     /// in .rodata) and the client can read it from the ELF file (or
     /// download it separately)
 #if defined(DEFERRED_FORMATTING)
     template <typename... Args>
-    std::optional<uint32_t> log(LogLevel level, uint8_t module, std::string_view fmt, Args && ... args)
+    std::optional<size_t> logToBuffer(
+        std::span<uint8_t> & span,
+        LogLevel level,
+        uint8_t module,
+        std::string_view fmt,
+        Args && ... args)
 #else
-    std::optional<uint32_t> log(LogLevel level, uint8_t module, const char * fmt, ...)
+    std::optional<size_t> logToBuffer(
+        std::span<uint8_t> & span,
+        LogLevel level,
+        uint8_t module,
+        const char * fmt,
+        ...)
+    {
+        va_list args;
+        va_start(args, fmt);
+        const auto ret = vLogToBuffer(span, level, module, fmt, args);
+        va_end(args);
+        return ret;
+    }
+    /// Same as logToBuffer but taking `va_list` instead of `...` varargs.
+    std::optional<size_t> vLogToBuffer(
+        std::span<uint8_t> & span,
+        LogLevel level,
+        uint8_t module,
+        const char * fmt,
+        va_list args)
 #endif
     {
         if (module > (1 << 5) - 1)
@@ -261,39 +294,78 @@ public:
             return {};
         }
         uint8_t initialByte = (static_cast<uint8_t>(level) << 5) | module;
-        std::span<uint8_t> span{pktBuf};
         span[0] = initialByte;
         // Space for length
         const auto start = span.begin() + 2;
 #if defined(DEFERRED_FORMATTING)
         const auto written = std::distance(start, std::ranges::copy(fmt, start).out);
         auto rest = span.subspan(2 + written);
-        (Cbor::Cbor<Args>::encode(std::forward<Args>(args), rest), ...);
+        bool ok = (Cbor::Cbor<Args>::encode(std::forward<Args>(args), rest) && ...);
         const auto end = rest.begin();
 #else
-        va_list args;
-        va_start(args, fmt);
         int written = vsnprintf(
             reinterpret_cast<char *>(&*start),
             std::distance(start, span.end()),
             fmt,
             args
         );
-        va_end(args);
+        bool ok = 0 < written && static_cast<size_t>(written) < span.size();
         const auto end = start + written;
 #endif
         span[1] = written;
-        if (written < 0)
+        if (!ok)
         {
             return {};
         }
-        span = span.first(std::distance(span.begin(), end));
-        if (send(Channels::Log, span))
+        size_t total = std::distance(span.begin(), end);
+        span = span.subspan(total);
+        return {total};
+    }
+
+    /// **Not threadsafe** use a mutex -- in particular don't call from
+    /// inside RPC functions either!
+    ///
+    /// Log some data. Returns the number of bytes logged (all the bytes
+    /// not just the formatted string), or nullopt if failed to log.
+    ///
+    /// TODO: Optionally just send the format string pointer (if it is
+    /// in .rodata) and the client can read it from the ELF file (or
+    /// download it separately)
+#if defined(DEFERRED_FORMATTING)
+    template <typename... Args>
+    std::optional<size_t> log(
+        LogLevel level,
+        uint8_t module,
+        std::string_view fmt,
+        Args && ... args)
+#else
+    std::optional<size_t> log(
+        LogLevel level,
+        uint8_t module,
+        const char * fmt,
+        ...)
+#endif
+    {
+        std::span<uint8_t> span{pktBuf};
+#if defined(DEFERRED_FORMATTING)
+        const auto formatted = logToBuffer(span, level, module, fmt, std::forward<Args>(args)...);
+#else
+        va_list args;
+        va_start(args, fmt);
+        const auto formatted = vLogToBuffer(span, level, module, fmt, args);
+        va_end(args);
+#endif
+        if (formatted)
         {
-            return {written};
+            std::span<uint8_t> toSend{pktBuf, *formatted};
+            if (send(Channels::Log, toSend))
+            {
+                return formatted;
+            }
         }
         return {};
     }
+
 
 private:
     CircularBuffer<uint8_t, Config.txBufSize, Config.maxPktSize> txBuf;
