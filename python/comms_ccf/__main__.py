@@ -17,9 +17,39 @@ from comms_ccf.background import BackgroundTasks
 from comms_ccf.channel import Channels
 from comms_ccf.hexdump import hexdump
 from comms_ccf.log import print_logs
-from comms_ccf.repl import Stdio, repl
+from comms_ccf.repl import Stdio, repl, script
 from comms_ccf.rpc import Rpc
 from comms_ccf.transport import StreamTransport
+
+
+async def demo_rpc(rpc: Rpc):
+    if add := getattr(rpc, "add", None):
+        try:
+            print("E.g. add(2,3) ~>", await add(2, 3))
+        except Exception as e:
+            print("Exception in demo:", str(e) or repr(e))
+
+
+async def init_locals(rpc: Rpc):
+    while True:
+        try:
+            await rpc.discover()
+            break
+        except EOFError:
+            raise  # No point in trying again
+        except Exception as e:
+            print("Failed to discover RPC:", str(e) or repr(e))
+            time.sleep(0.2)
+
+    locals = {k: v for k, v in rpc.methods().items()}
+    locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
+    locals["help"] = rpc.help
+    locals["hexdump"] = hexdump
+    locals["dir"] = dir
+
+    print("Use help(name=None) for discovered methods")
+    print("(optionally name to document just that method)")
+    return locals
 
 
 async def amain():
@@ -32,6 +62,9 @@ async def amain():
         "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
     )
     parser.add_argument("--expect-logs", type=Path, help="Check logs against file")
+    parser.add_argument(
+        "--script-file", type=Path, help="Check `> command` gives `< value`"
+    )
     parser.add_argument(
         "--debug", "-d", action="store_true", help="Open debugger on exceptions"
     )
@@ -65,43 +98,30 @@ async def amain():
         rpc = Rpc(channels)
 
         background_tasks = BackgroundTasks(loop)
-        # First open the log channel before starting the channels loop
-        if args.log:
-            background_tasks.add(print_logs, channels, args.expect_logs)
+        try:
+            # First open the log channel before starting the channels loop
+            if args.log:
+                background_tasks.add(print_logs, channels, args.expect_logs)
 
-        background_tasks.add(channels.loop, args.debug)
+            background_tasks.add(channels.loop, args.debug)
 
-        if args.repl:
-            while True:
-                try:
-                    await rpc.discover()
-                    break
-                except EOFError:
-                    raise  # No point in trying again
-                except Exception as e:
-                    print("Failed to discover RPC:", str(e) or repr(e))
-                    time.sleep(0.2)
+            if args.repl or args.script_file:
+                locals = await init_locals(rpc)
+                await demo_rpc(rpc)
 
-            locals = {k: v for k, v in rpc.methods().items()}
-            locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
-            locals["help"] = rpc.help
-            locals["hexdump"] = hexdump
-            locals["dir"] = dir
+                if args.script_file:
+                    errors = await script(args.script_file, locals)
+                    if errors:
+                        raise SystemExit(errors)
 
-            print("Use help(name=None) for discovered methods")
-            print("(optionally name to document just that method)")
-            if add := getattr(rpc, "add", None):
-                try:
-                    print("E.g. add(2,3) ~>", await add(2, 3))
-                except Exception as e:
-                    print("Exception in demo:", str(e) or repr(e))
+                if args.repl:
+                    await repl(Stdio(), locals, args.debug)
 
-            await repl(Stdio(), locals, args.debug)
-
-        background_tasks.suppress_exceptions.add(EOFError)
-        background_tasks.suppress_exceptions.add(asyncio.CancelledError)
-        tx.close()
-        await background_tasks.wait(timeout=5)
+        finally:
+            background_tasks.suppress_exceptions.add(EOFError)
+            background_tasks.suppress_exceptions.add(asyncio.CancelledError)
+            tx.close()
+            await background_tasks.wait(timeout=5)
 
 
 def quit(*args, **kwargs):

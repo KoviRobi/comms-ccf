@@ -3,8 +3,12 @@ Simple REPL with history and tab completion (if readline is present)
 """
 
 import asyncio
+import io
 import pdb
+import re
+import sys
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 from typing import AsyncGenerator
 
@@ -25,6 +29,117 @@ class Stdio:
 
     async def print(self, *args, **kwargs):
         return await asyncio.to_thread(lambda: print(*args, **kwargs))
+
+
+async def eval_expr(expr, locals, debug) -> object:
+    # Patch line to be able to use await inside by making it an
+    # (async) generator
+    line = f"((\n{expr}\n) for _ in '_')"
+    expr = eval(line, locals, locals)
+    if isinstance(expr, AsyncGenerator):
+        expr = await expr.__anext__()
+    else:
+        expr = next(expr)
+    if asyncio.iscoroutine(expr):
+        expr = await expr
+    return expr
+
+
+@dataclass
+class Command:
+    """
+    One portion of a script that can be evaluated and checked against
+    expected results
+    """
+
+    prefix: str = ""
+    input: str = ""
+    expected: str = ""
+    exception: str | None = None
+    stdin: str = ""
+    stdout: str = ""
+    stderr: str = ""
+
+    async def eval(self, locals) -> str:
+        """
+        Evaluate a command, returning a non-empty string describing any
+        errors (or the empty string if it behaved as expected).
+        """
+        if not self.input:
+            return ""
+
+        self.input = self.input.removesuffix("\n")
+        self.expected = self.expected.removesuffix("\n")
+        if self.exception is not None:
+            self.exception = self.exception.removesuffix("\n")
+
+        errors = ""
+        exc = None
+        ret = None
+
+        stdin, stdout, stderr = (sys.stdin, sys.stdout, sys.stderr)
+        inIO, outIO, errIO = io.StringIO(self.stdin), io.StringIO(), io.StringIO()
+        (sys.stdin, sys.stdout, sys.stderr) = inIO, outIO, errIO
+        try:
+            ret = str(await eval_expr(self.input, locals, False))
+        except Exception as e:
+            exc = e
+        finally:
+            outIO.flush()
+            errIO.flush()
+            (sys.stdin, sys.stdout, sys.stderr) = stdin, stdout, stderr
+
+        for name, expected, got in [
+            ("exception", self.exception, exc),
+            ("return", self.expected, ret),
+            ("stdout", self.stdout, outIO.getvalue()),
+            ("stderr", self.stderr, errIO.getvalue()),
+        ]:
+            if expected != got:
+                errors += f"Was expecting {name} {expected!r} but got {got!r}\n"
+
+        unconsumed = inIO.getvalue()[inIO.tell() :]
+        if unconsumed:
+            unconsumed = unconsumed
+            errors += f"Unconsumed input: {unconsumed.replace('\n', '\n0 ')}"
+
+        if errors:
+            return (
+                "Error while evaluating command\n"
+                + f">{self.prefix}{self.input.replace('\n', '\n> ')}\n"
+                + f"|{self.prefix}{errors.replace('\n', '\n| ')}\n"
+            )
+        return ""
+
+
+async def script(script_file: Path, locals):
+    with script_file.open("rt") as fp:
+        errors = ""
+        # If we start reading a new input, it indicates a new command
+        readingInput = False
+        command = Command()
+        while line := fp.readline():
+            if line.startswith(">"):
+                if not readingInput:
+                    errors += await command.eval(locals)
+                    readingInput = True
+                    command = Command()
+                    match = re.match(r"^\s*", line.removeprefix(">"))
+                    assert match, "Should match at least the empty string"
+                    command.prefix = match[0]
+                command.input += line.removeprefix(">").removeprefix(command.prefix)
+            else:
+                readingInput = False
+            if line.startswith("<"):
+                command.expected += line.removeprefix("<").removeprefix(command.prefix)
+            if line.startswith("0"):
+                command.stdin += line.removeprefix("0").removeprefix(command.prefix)
+            if line.startswith("1"):
+                command.stdout += line.removeprefix("1").removeprefix(command.prefix)
+            if line.startswith("2"):
+                command.stderr += line.removeprefix("2").removeprefix(command.prefix)
+        errors += await command.eval(locals)
+        return errors
 
 
 async def repl(io, locals, debug=False):
@@ -52,18 +167,7 @@ async def repl(io, locals, debug=False):
         if not line:  # Empty line
             continue
         try:
-            # Patch line to be able to use await inside byn making it an
-            # (async) generator
-            line = f"((\n{line}\n) for _ in '_')"
-            expr = eval(line, locals, locals)
-            if isinstance(expr, AsyncGenerator):
-                expr = await expr.__anext__()
-            else:
-                expr = next(expr)
-            if asyncio.iscoroutine(expr):
-                expr = await expr
-            if expr is not None:
-                await io.print("out>", expr)
+            io.print("out>", await eval_expr(line, locals, debug))
         except Exception as e:
             await io.print(traceback.format_exc())
             if debug:

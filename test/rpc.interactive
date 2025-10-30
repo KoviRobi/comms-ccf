@@ -1,0 +1,6 @@
+> log_inside()
+< undefined
+1 Info 1 Test 1 2.000000 3
+> log_delayed()
+< undefined
+# Log not output here but after the RPC call

@@ -61,8 +61,9 @@ add_build_and_test(
     NAME rpc_demo
     DEPENDS rpc
     COMMAND
-        uv run comms-ccf --verbose --no-repl
-        -- stdio $<TARGET_FILE:rpc>
+        uv run comms-ccf
+        --script-file "${CMAKE_CURRENT_LIST_DIR}/test/rpc.interactive"
+        --verbose --no-repl -- stdio $<TARGET_FILE:rpc>
 )
 
 add_executable(rpc_inline_vtable test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
@@ -72,8 +73,28 @@ add_build_and_test(
     NAME rpc_inline_vtable_demo
     DEPENDS rpc_inline_vtable
     COMMAND
-        uv run comms-ccf --verbose --no-repl
-        -- stdio $<TARGET_FILE:rpc>
+        uv run comms-ccf
+        --script-file "${CMAKE_CURRENT_LIST_DIR}/test/rpc.interactive"
+        --verbose --no-repl -- stdio $<TARGET_FILE:rpc>
+)
+
+add_executable(rpc_debug test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_include_directories(rpc_debug PUBLIC comms-ccf/)
+target_compile_definitions(rpc_debug PUBLIC
+    "DEBUG_CBOR=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_CCF=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_COBS=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_FNV1A=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "DEBUG_RPC=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
+    "STRIP_ROOT=\"${CMAKE_CURRENT_LIST_DIR}/\""
+)
+add_build_and_test(
+    NAME rpc_debug_demo
+    DEPENDS rpc_debug
+    COMMAND
+        uv run comms-ccf
+        --script-file "${CMAKE_CURRENT_LIST_DIR}/test/rpc.interactive"
+        --verbose --no-repl -- stdio $<TARGET_FILE:rpc_debug>
 )
 
 # Demo of logging
@@ -97,24 +118,6 @@ add_build_and_test(
         uv run comms-ccf --verbose --no-repl
         --expect-logs "${CMAKE_CURRENT_LIST_DIR}/test/log.expected"
         -- stdio $<TARGET_FILE:log>
-)
-
-add_executable(rpc_debug test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
-target_include_directories(rpc_debug PUBLIC comms-ccf/)
-target_compile_definitions(rpc_debug PUBLIC
-    "DEBUG_CBOR=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
-    "DEBUG_CCF=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
-    "DEBUG_COBS=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
-    "DEBUG_FNV1A=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
-    "DEBUG_RPC=\"${CMAKE_CURRENT_LIST_DIR}/debug/stderr.hpp\""
-    "STRIP_ROOT=\"${CMAKE_CURRENT_LIST_DIR}/\""
-)
-add_build_and_test(
-    NAME rpc_debug_demo
-    DEPENDS rpc_debug
-    COMMAND
-        uv run comms-ccf --verbose --no-repl
-        -- stdio $<TARGET_FILE:rpc_debug>
 )
 
 add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)
