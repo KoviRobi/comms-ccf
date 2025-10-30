@@ -28,10 +28,15 @@ Rpc rpc
 {
     Call{"add", "return x+y", {"x", "y"}, +[](int x, int y) { return x + y; }},
     Call{"hello", "greet the world", {}, +[](){ return "Hello, world!"sv; }},
-    Call{"log", "test log", {},
+    Call{"log_delayed", "test log", {},
     +[]()
     {
         ccf.logToBuffer(scratchLogSpan, LogLevel::Info, 0, "Test %d %f %s", 1, 2.0, "3");
+    }},
+    Call{"log_inside", "test log", {},
+    +[]()
+    {
+        ccf.log(LogLevel::Info, 1, "Test %d %f %s", 1, 2.0, "3");
     }},
 };
 

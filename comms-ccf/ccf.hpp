@@ -171,9 +171,6 @@ public:
             span = span.subspan(sizeof(seqNo) + sizeof(function));
             // Reuse the pktBuf buffer for return (leaving space for
             // channel, function, and checksum)
-            pktBuf[0] = channel;
-            pktBuf[1] = seqNo;
-            pktBuf[2] = function;
             auto header = sizeof(channel) + sizeof(seqNo) + sizeof(function);
             auto ret = std::span<uint8_t>(
                 pktBuf + header, sizeof(pktBuf) - header - Fnv1a::size);
@@ -188,6 +185,9 @@ public:
                 output = true;
                 continue;
             }
+            pktBuf[0] = channel;
+            pktBuf[1] = seqNo;
+            pktBuf[2] = function;
             auto respLen = static_cast<size_t>(ret.data() - pktBuf);
             std::span resp{pktBuf + sizeof(channel), respLen - sizeof(channel)};
             output = output || send(Channels::Rpc, resp);
