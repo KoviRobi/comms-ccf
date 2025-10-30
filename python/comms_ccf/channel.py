@@ -12,6 +12,7 @@ using a queue instead of futures.
 """
 
 import pdb
+import traceback
 from asyncio import (
     IncompleteReadError,
     Queue,
@@ -62,8 +63,9 @@ class Channels:
                     if queue is not None:
                         queue.shutdown(immediate=False)
                 break
-            except BaseException as e:
+            except Exception as e:
                 print("Exception in channel", str(e) or repr(e))
+                traceback.print_exception(e)
                 if debug:
                     pdb.post_mortem(e.__traceback__)
 
