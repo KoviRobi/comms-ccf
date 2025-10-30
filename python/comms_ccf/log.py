@@ -62,10 +62,10 @@ async def print_logs(channels: Channels, expect_logs: Path | None = None):
             if expected_logs is not None:
                 assert expected_logs == got_logs, "Logs not as expected:\n" + "".join(
                     difflib.unified_diff(
-                        a=got_logs,
-                        b=expected_logs,
-                        fromfile="Got",
-                        tofile="Expected",
+                        a=expected_logs,
+                        b=got_logs,
+                        fromfile="Expected",
+                        tofile="Got",
                     )
                 )
             raise
