@@ -31,7 +31,7 @@ class Stdio:
         return await asyncio.to_thread(lambda: print(*args, **kwargs))
 
 
-async def eval_expr(expr, locals, debug) -> object:
+async def eval_expr(expr, locals) -> object:
     # Patch line to be able to use await inside by making it an
     # (async) generator
     line = f"((\n{expr}\n) for _ in '_')"
@@ -81,7 +81,7 @@ class Command:
         inIO, outIO, errIO = io.StringIO(self.stdin), io.StringIO(), io.StringIO()
         (sys.stdin, sys.stdout, sys.stderr) = inIO, outIO, errIO
         try:
-            ret = str(await eval_expr(self.input, locals, False))
+            ret = str(await eval_expr(self.input, locals))
         except Exception as e:
             exc = e
         finally:
