@@ -167,7 +167,7 @@ async def repl(io, locals, debug=False):
         if not line:  # Empty line
             continue
         try:
-            io.print("out>", await eval_expr(line, locals, debug))
+            await io.print("out>", await eval_expr(line, locals))
         except Exception as e:
             await io.print(traceback.format_exc())
             if debug:
