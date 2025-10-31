@@ -10,7 +10,7 @@ import sys
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Protocol
 
 try:
     import readline
@@ -23,12 +23,36 @@ except ModuleNotFoundError:
 history_file = Path.home() / ".cache" / "comms-ccf_history"
 
 
-class Stdio:
-    async def input(self, *args, **kwargs):
-        return await asyncio.to_thread(lambda: input(*args, **kwargs))
+class Console(Protocol):
+    def close(self, reason: str) -> None: ...
+    async def input(self, prompt: str = "") -> str: ...
+    async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None: ...
 
-    async def print(self, *args, **kwargs):
-        return await asyncio.to_thread(lambda: print(*args, **kwargs))
+
+class Stdio:
+    def __init__(self, loop: asyncio.AbstractEventLoop):
+        self._loop = loop
+        self._closed = self._loop.create_future()
+
+    def close(self, reason: str):
+        if not self._closed.done():
+            self._closed.set_exception(SystemExit(reason))
+
+    async def input(self, prompt: str = "") -> str:
+        thread = asyncio.to_thread(lambda: input(prompt))
+        tasks = [self._closed, thread]
+        for result in asyncio.as_completed(tasks):
+            try:
+                return await result
+            except:
+                sys.stdin.close()
+                raise
+
+    async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None:
+        thread = asyncio.to_thread(lambda: print(*strs, sep=sep, end=end))
+        tasks = [self._closed, thread]
+        for result in asyncio.as_completed(tasks):
+            return await result
 
 
 async def eval_expr(expr, locals) -> object:

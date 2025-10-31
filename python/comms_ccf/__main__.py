@@ -21,6 +21,8 @@ from comms_ccf.repl import Stdio, repl, script
 from comms_ccf.rpc import Rpc
 from comms_ccf.transport import StreamTransport
 
+console = None
+
 
 async def demo_rpc(rpc: Rpc):
     if add := getattr(rpc, "add", None):
@@ -115,7 +117,9 @@ async def amain():
                         raise SystemExit(errors)
 
                 if args.repl:
-                    await repl(Stdio(), locals, args.debug)
+                    global console
+                    console = Stdio(loop)
+                    await repl(console, locals, args.debug)
 
         finally:
             background_tasks.suppress_exceptions.add(EOFError)
@@ -125,9 +129,9 @@ async def amain():
 
 
 def quit(*args, **kwargs):
-    sys.stdin.close()
-    print("Press Ctrl-D (or any other key) to exit")
-    exit()
+    if console:
+        console.close("Ctrl-C received")
+    print("Press Ctrl-D to exit")
 
 
 def main():
