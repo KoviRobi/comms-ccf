@@ -29,13 +29,6 @@ except ModuleNotFoundError:
 history_file = Path.home() / ".cache" / "comms-ccf_history"
 
 
-class Console(Protocol):
-    async def __aenter__(self) -> Console: ...
-    async def __aexit__(self, ty, exc, tb): ...
-    async def input(self, prompt: str = "") -> str: ...
-    async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None: ...
-
-
 class Stdio:
     def __init__(self, loop: asyncio.AbstractEventLoop):
         self._loop = loop
@@ -208,7 +201,7 @@ async def repl(console: Console, locals, debug=False):
         try:
             result = await eval_expr(line, locals)
             locals["_"] = result
-            await console.print("out>", result)
+            await console.print("out>", str(result))
         except Exception as e:
             await console.print(traceback.format_exc())
             if debug:
