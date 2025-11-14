@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import io
-import sys
 import tkinter as tk
 import typing as t
 from tkinter import scrolledtext
@@ -20,10 +18,15 @@ class Console(tk.Frame):
         self._output.bind("<Control-w>", self.erase_word)
         self._output.bind("<Control-u>", self.erase_linestart)
         self._output.bind("<Control-k>", self.erase_lineend)
+        self._input = tk.StringVar()
 
     def append_output(self, text: object) -> None:
         if text:
             self._output.insert(tk.END, str(text))
+
+    def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None:
+        print("print strs", strs)
+        self.append_output(sep.join(strs) + end)
 
     def erase_word(self, event: tk.Event):
         widget = t.cast(tk.Text, event.widget)
@@ -40,43 +43,25 @@ class Console(tk.Frame):
         widget.delete("insert", "insert lineend")
         return "break"
 
+    def wait_input(self) -> str:
+        return self._input.get()
+
+    def input(self, prompt: str = "") -> str:
+        self.print(prompt, end="")
+        return self.wait_input()
+
     def accept_input(self, event: tk.Event):
         if event.state:
             return ""
         widget = t.cast(tk.Text, event.widget)
         data = widget.get("insert linestart", "insert lineend")
-        exc = None
-        output = None
-        inp, out, err = sys.stdin, sys.stdout, sys.stderr
-        try:
-            sys.stdin, sys.stdout, sys.stderr = (
-                io.StringIO(),
-                io.StringIO(),
-                io.StringIO(),
-            )
-            output = eval(data)
-        except BaseException as e:
-            exc = e
-        finally:
-            sys.stdin, sys.stdout, sys.stderr, inp, out, err = (
-                inp,
-                out,
-                err,
-                sys.stdin,
-                sys.stdout,
-                sys.stderr,
-            )
-        self.append_output(out.getvalue())
-        self.append_output(err.getvalue())
-        self.append_output(exc)
-        self.append_output(output)
+        self._input.set(data)
         return "break"
 
     def complete_input(self, event: tk.Event):
         if event.state:
             return ""
         widget = t.cast(tk.Text, event.widget)
-        pos = widget.index(tk.INSERT)
         print("Complete", event, widget.get("insert linestart", "insert"), flush=True)
         return "break"
 

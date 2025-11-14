@@ -56,9 +56,9 @@ class Channels:
                     name = chan
                     if chan in Channel:
                         name = Channel(chan).name
-                    await self._console.print("Dropping channel", name, "data", data)
+                    await self._console.print("Dropping channel", str(name), "data", str(data))
                     await self._console.print(
-                        "future messages ignored on channel", name
+                        "future messages ignored on channel", str(name)
                     )
                     self._channels[chan] = None
             except TimeoutError:
@@ -71,7 +71,7 @@ class Channels:
                 break
             except Exception as e:
                 await self._console.print("Exception in channel", str(e) or repr(e))
-                await self._console.print(traceback.format_exception(e))
+                await self._console.print('\n'.join(traceback.format_exception(e)))
                 if debug:
                     pdb.post_mortem(e.__traceback__)
                 else:

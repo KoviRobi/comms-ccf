@@ -3,7 +3,7 @@ import typing as t
 
 import janus
 
-from comms_ccf.tk.console import Console
+from comms_ccf.tk.con import Console
 from comms_ccf.tk.table import Table
 
 
@@ -56,6 +56,7 @@ class AsyncConsole:
             return await self._fromTkQueue.async_q.get()
         except janus.AsyncQueueShutDown:
             pass
+        assert False
 
     def close(self, reason: str):
         self._fromTkQueue.close()

@@ -208,7 +208,7 @@ async def repl(console: Console, locals, debug=False):
         try:
             result = await eval_expr(line, locals)
             locals["_"] = result
-            await console.print("out>", result)
+            await console.print("out>", str(result))
         except Exception as e:
             await console.print(traceback.format_exc())
             if debug:
