@@ -69,7 +69,7 @@ async def amain():
         "--debug", "-d", action="store_true", help="Open debugger on exceptions"
     )
     sp = parser.add_subparsers(
-        description="Subcommands, see `%(prog)s <subcommand> --help`"
+        description="Subcommands, see `%(prog)s <subcommand> --help`", required=True
     )
 
     tcp_parser = tcp.command_parser(sp.add_parser("tcp"))
