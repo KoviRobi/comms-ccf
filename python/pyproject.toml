@@ -25,6 +25,7 @@ requires = ["setuptools"]
 
 [tool.setuptools]
 py-modules = [ 'comms_ccf', 'binutils_mapfile' ]
+packages = [ 'comms_ccf', 'binutils_mapfile' ]
 
 [tool.isort]
 profile = "black"
