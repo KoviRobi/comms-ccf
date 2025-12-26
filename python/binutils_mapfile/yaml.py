@@ -9,7 +9,6 @@ import sys
 import typing as t
 from json import dump
 
-import binutils_mapfile.utils as utils
 from binutils_mapfile.parser import MapFile, Section
 
 

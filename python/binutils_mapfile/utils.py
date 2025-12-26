@@ -4,9 +4,7 @@ Miscellaneous utils used for the binutils mapfile parser.
 
 from __future__ import annotations
 
-import inspect
 import re
-import sys
 import typing as t
 
 

@@ -440,7 +440,6 @@ class MapFile:
 
     @classmethod
     def parse(cls, file_like: t.TextIO) -> MapFile:
-        self = cls()
         root = Path(file_like.name).parent
         archive_members = ArchiveMembers()
         discards = Discards()
@@ -469,7 +468,7 @@ class MapFile:
                 break
             if parser is not None:
                 parser.feed(root, line, lines)
-        return MapFile(
+        return cls(
             archive_members=archive_members.archives,
             discards=discards.discards,
             memory_configuration=memory_configuration.areas,

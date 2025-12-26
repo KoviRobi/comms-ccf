@@ -47,6 +47,7 @@ class Stdio:
             except:
                 sys.stdin.close()
                 raise
+        return ""  # Some error on input
 
     async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None:
         thread = asyncio.to_thread(lambda: print(*strs, sep=sep, end=end))

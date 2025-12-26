@@ -7,7 +7,6 @@ from __future__ import annotations
 import sys
 import typing as t
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from random import Random
 
 from jinja2 import Environment, PackageLoader, select_autoescape

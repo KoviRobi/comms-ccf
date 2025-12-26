@@ -5,7 +5,6 @@ schema.
 
 import asyncio
 import pydoc
-import time
 import typing as t
 from inspect import Parameter, signature
 from random import randint
@@ -71,12 +70,11 @@ class Rpc:
         call.__doc__ = doc
         call.__module__ = __name__
         call.__qualname__ = f"{Rpc.__qualname__}.{name}"
-        call.__signature__ = signature(call).replace(
-            parameters=sig, return_annotation=ret
-        )
+        call_signature = signature(call).replace(parameters=sig, return_annotation=ret)
+        setattr(call, "__signature__", call_signature)
         self._methods[name] = call
         setattr(self, name, call)
-        print(f"Discovered {call.__name__}{call.__signature__}")
+        print(f"Discovered {call.__name__}{call_signature}")
 
     def methods(self) -> dict[str, t.Callable[..., object]]:
         return self._methods

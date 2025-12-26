@@ -4,7 +4,6 @@ checks the checksum.
 """
 
 import asyncio
-import time
 import typing as t
 
 from cobs.cobs import DecodeError, decode, encode
