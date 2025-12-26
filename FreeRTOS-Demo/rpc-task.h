@@ -1,3 +1,7 @@
+/**
+\file
+\brief FreeRTOS Task which handles RPC calls.
+*/
 #pragma once
 
 #include <FreeRTOS.h>

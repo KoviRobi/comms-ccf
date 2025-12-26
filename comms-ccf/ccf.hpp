@@ -1,11 +1,26 @@
 /**
+\file
+\brief Top-level interface.
+\tableofcontents
 
 # CCF -- Bringing It Together
 
-This header brings the separate parts (COBS, CBOR, FNV-1A and the circular
-buffer) together to be able to do RPC calls.
+This header brings the separate parts ([COBS](#cobs.hpp),
+[CBOR](#cbor.hpp), [FNV-1A](#fnv1a.hpp) and the [circular
+buffer](#circular_buffer.hpp)) together to be able to do [RPC](#rpc.hpp)
+calls.
+
+#### `DEFERRED_FORMATTING` {#DEFERRED_FORMATTING}
+
+The compile-flag `DEFERRED_FORMATTING` means you can avoid compiling using
+the `printf` family of functions, instead we send the format string and
+arguments encoded using CBOR and the host-side does the formatting,
+i.e. the Python `%` formatting. For most uses the output should be
+equivalent, but there might be some differences between the Python and
+C format strings.
 
 */
+
 
 #pragma once
 
@@ -42,10 +57,10 @@ enum class Channels : uint8_t
 {
     Rpc = 0,
     Log = 1,
-    // TODO: In-place trace tag to save bytes on trace data?
+    /// \todo In-place trace tag to save bytes on trace data?
     Trace = 2,
-    // TODO: Reserve some bits for flags? E.g. fragment/partial packet
-    // flag, CCF metadata/error flag?
+    /// \todo Reserve some bits for flags? E.g. fragment/partial packet
+    /// flag, CCF metadata/error flag?
 };
 
 enum class LogLevel : uint8_t
@@ -64,11 +79,13 @@ class Ccf
 public:
     using TxFrame = CircularBuffer<uint8_t, Config.txBufSize, Config.maxPktSize>::Frame;
 
-    /// Safe to call from interrupt context
-    /// **Not threadsafe** only call from a single communications
-    /// channel's interrupt callback. If you want to use multiple
-    /// communications channels multiplexed, you could use separate SPSC
-    /// queues feeding into this queue.
+    /// \brief Push RX'ed character to RX queue. Safe to call from
+    /// interrupt context.
+    /// \note **Not threadsafe**, only call from a single communications
+    /// channel's interrupt callback.
+    ///
+    /// If you want to use multiple communications channels multiplexed,
+    /// you could use separate SPSC queues feeding into this queue.
     ///
     /// Call this with any characters received on the transport. It
     /// returns `true` if it is time to call `poll`.
@@ -104,14 +121,15 @@ public:
         return false;
     }
 
-    /// Safe to call from interrupt context
+    /// \brief Get TX queue size. Safe to call from interrupt context.
     bool charactersToSend(std::optional<TxFrame> & frame)
     {
         return txBuf.get_frame(frame);
     }
 
-    /// **Not threadsafe** only call from one thread
-    /// **Not safe to call from an interrupt context**
+    /// \brief Process incoming packets to dispatch e.g. RPC.
+    /// \note **Not threadsafe**, only call from one thread
+    /// \note **Not safe to call from an interrupt context**
     ///
     /// Process any incoming packets. Returns true if there is an output
     /// in response.
@@ -136,8 +154,8 @@ public:
 
             if (len < 6)
             {
-                // TODO: Just using checksumless zero-length packets to
-                // indicate error for now.
+                /// \todo Just using checksumless zero-length packets to
+                /// indicate error for now.
                 debugf(WARN "Bad RPC! (len=%zu)" END LOGLEVEL_ARGS, len);
                 std::ranges::copy("Bad RPC!\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
@@ -147,13 +165,13 @@ public:
             }
 
             uint8_t channel = span[0];
-            // TODO: Dispatch on channel
+            /// \todo Dispatch on channel
             (void)channel;
 
             if (!Fnv1a::checkAtEnd(span))
             {
-                // TODO: Just using checksumless zero-length packets to
-                // indicate error for now.
+                /// \todo Just using checksumless zero-length packets
+                /// to indicate error for now.
                 debugf(WARN "Corrupted request (chan=%u)" END LOGLEVEL_ARGS, channel);
                 std::ranges::copy("Corrupted request\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
@@ -176,8 +194,8 @@ public:
                 pktBuf + header, sizeof(pktBuf) - header - Fnv1a::size);
             if (!rpc.call(function, span, ret))
             {
-                // TODO: Just using checksumless zero-length packets to
-                // indicate error for now.
+                /// \todo Just using checksumless zero-length packets
+                /// to indicate error for now.
                 debugf(WARN "RPC failed (function=%u)" END LOGLEVEL_ARGS, function);
                 std::ranges::copy("RPC failed\n", std::back_inserter(txBuf));
                 txBuf.push_back(static_cast<uint8_t>(0));
@@ -195,13 +213,14 @@ public:
         return output;
     }
 
-    /// **Not threadsafe** use a mutex
+    /// \brief Send data over a channel.
+    /// \note **Not threadsafe**, use a mutex.
     ///
     /// Put some messaget to be sent, returns true if it has succeeded
     /// (and therefore you should call the function to send messages
     /// from the queue).
     ///
-    /// TODO: Maybe could be re-entrant/support adding from ISR without
+    /// \todo Maybe could be re-entrant/support adding from ISR without
     /// locking by exchanging the ISR data buffer with the data not yet
     /// notified, then putting the data not yet notified back after. This
     /// would make it only not threadsafe for normal tasks which might
@@ -241,8 +260,11 @@ public:
         }
     }
 
-    /// **Threadsafe** because it doesn't send the message, just formats
-    /// it to the buffer.
+    /// \fn std::optional< size_t > logToBuffer (std::span< uint8_t > &span, LogLevel level, uint8_t module, const char *fmt,...)
+    ///
+    /// \brief Logs to a buffer, returning logged size. **Threadsafe**
+    /// because it doesn't send the message, just formats it to the
+    /// buffer.
     ///
     /// Log some data to the buffer, but don't send it yet. Handy for
     /// using in interrupts or other reentrant contexts (e.g. using it to
@@ -255,7 +277,9 @@ public:
     /// to the unused region of the buffer, once done (if it successfully
     /// logged, otherwise it leaves it in place).
     ///
-    /// TODO: Optionally just send the format string pointer (if it is
+    /// \see \ref DEFERRED_FORMATTING
+    ///
+    /// \todo Optionally just send the format string pointer (if it is
     /// in .rodata) and the client can read it from the ELF file (or
     /// download it separately)
 #if defined(DEFERRED_FORMATTING)
@@ -322,13 +346,18 @@ public:
         return {total};
     }
 
-    /// **Not threadsafe** use a mutex -- in particular don't call from
-    /// inside RPC functions either!
+    /// \fn std::optional<size_t> log(LogLevel level, uint8_t module, const char * fmt, ...)
+    ///
+    /// \brief Sends a logs message.
+    /// \note **Not threadsafe**, use a mutex -- in particular don't
+    /// call from inside RPC functions either!
     ///
     /// Log some data. Returns the number of bytes logged (all the bytes
     /// not just the formatted string), or nullopt if failed to log.
     ///
-    /// TODO: Optionally just send the format string pointer (if it is
+    /// \see \ref DEFERRED_FORMATTING
+    ///
+    /// \todo Optionally just send the format string pointer (if it is
     /// in .rodata) and the client can read it from the ELF file (or
     /// download it separately)
 #if defined(DEFERRED_FORMATTING)

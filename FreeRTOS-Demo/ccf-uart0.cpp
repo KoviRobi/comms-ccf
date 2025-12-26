@@ -79,7 +79,7 @@ static void commsCcfTxDone()
 /// to avoid issues due to reentrancy.
 void commsCcfTxAvailable()
 {
-    // TODO: Check UART is not busy?
+    /// \todo Check UART is not busy?
     portENTER_CRITICAL();
     if (!txBusy)
     {

@@ -1,4 +1,7 @@
 /**
+\file
+\brief Simple framing (marking packet start/stop) with
+self-synchronisation.
 
 # Constant Overhead Byte Stuffing (COBS)
 
@@ -38,10 +41,12 @@ byte!
 
 namespace Cobs
 {
-    // Because we output `runLength + 1`, i.e. the pointer to the null
-    // not the last non-null byte, the maximum is 254
+    /// Because we output `runLength + 1`, i.e. the pointer to the null
+    /// not the last non-null byte, the maximum is 254
     constexpr uint8_t maxRunLength = 254;
 
+    /// Returns the maximum size required for encoding data of the
+    /// given size.
     constexpr size_t maxEncodedSize(size_t dataSize)
     {
         size_t overhead = (dataSize + maxRunLength)/maxRunLength;
@@ -50,7 +55,10 @@ namespace Cobs
 
     class IteratorEnd { };
 
-    /// Note: Encoder is itself the iterator
+    /// Encodes data from a buffer (given at constructino time) to the
+    /// output of the iterator.
+    ///
+    /// \note Encoder is itself the iterator.
     class Encoder
     {
     public:
@@ -90,13 +98,14 @@ namespace Cobs
         uint8_t findRunLength();
 
         std::span<const uint8_t> data;
-        // A run is a sequence of contiguous non-zeroes (excluding the zero)
+        /// A run is a sequence of contiguous non-zeroes (excluding the zero).
         uint8_t runLength;
         uint8_t runIndex = 0;
         bool runHeaderOutput = false;
     };
     static_assert(std::input_iterator<Encoder>);
 
+    /// Decodes data as a state-machine.
     class Decoder
     {
     public:

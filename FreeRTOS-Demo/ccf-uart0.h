@@ -1,3 +1,7 @@
+/**
+\file
+\brief C interface to use Comms-CCF over the LM3S6965 UART.
+*/
 #pragma once
 
 #ifdef __cplusplus

@@ -1,3 +1,9 @@
+/**
+\file
+
+Simple debug logging to stderr.
+
+*/
 #include <stdio.h>
 
 #include "common.hpp"

@@ -1,13 +1,15 @@
-[![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)
-<br/><sup>(click for more details)</sup>
+[![Tests](https://github.com/KoviRobi/comms-ccf/actions/workflows/test.yaml/badge.svg)<br/><sup>(click for more details)</sup>
 ](https://kovirobi.github.io/comms-ccf/test.html)
+
+Doxygen docs at <https://kovirobi.github.io/comms-ccf/>.
 
 # Comms-CCF
 
-This is a simple communication layer based on COBS, CBOR and FNV-1A
+This is a simple communication layer based on [COBS](#comms-ccf/cobs.hpp),
+[CBOR](#comms-ccf/cbor.hpp) and [FNV-1A](#comms-ccf/fnv1a.hpp).
 
-Can be used to implement other channels on top, e.g. RPC, logging,
-tracing etc.
+Can be used to implement other channels on top, e.g. [RPC](#rpc.hpp),
+[logging](#Ccf::log()), tracing etc.
 
 None of the ideas are new here, but it's still useful to have them
 together like this. And it's more focused on embedded than some other
@@ -18,7 +20,7 @@ optimisation [`-Og`].)
 
 ## Status: Proof of concept
 
-Currently there is a working demo in [FreeRTOS-Demo/](/FreeRTOS-Demo/)
+Currently there is a working demo in [FreeRTOS-Demo/](#FreeRTOS-Demo)
 which should be possible to port to other platforms. There is some Python
 support in [python/comms_ccf/](python/comms_ccf/) which can connect to
 the demo and issue RPC commands.
@@ -28,51 +30,51 @@ the demo and issue RPC commands.
 This is proof-of-concept because not all of the layers below are filled
 in properly:
 
-1. [ ] Python layer could use IPython for a more friendly REPL.
-2. [ ] RPC
-    1. [X] The Python type hints only do simple types, doing nested
+- [ ] Python layer could use IPython for a more friendly REPL.
+- [ ] RPC
+    - [X] The Python type hints only do simple types, doing nested
     types such as tuples is not yet done.
-    2. [X] Allow functions returning void values
-    3. [ ] More complicated RPC is not done (e.g. asynchronous functions,
+    - [X] Allow functions returning void values
+    - [ ] More complicated RPC is not done (e.g. asynchronous functions,
     functions returning data over several packets).
-    4. [ ] Storing values (e.g. objects) across function calls is not
+    - [ ] Storing values (e.g. objects) across function calls is not
     done -- probably not necessary though.
-    5. [ ] Proper error values for issues with the RPC.
-    6. [ ] Encoding Python types more compactly (e.g. int/list of ints
+    - [ ] Proper error values for issues with the RPC.
+    - [ ] Encoding Python types more compactly (e.g. int/list of ints
     rather than string).
-3. [ ] Other protocols such as ~logging~ or streaming sensor results
+- [ ] Other protocols such as ~logging~ or streaming sensor results
 not yet demonstrated.
-   1. [X] Basic logging done.
-   2. [X] Deferred format logging to avoid pulling in printf (and compare
+   - [X] Basic logging done.
+   - [X] Deferred format logging to avoid pulling in printf (and compare
    space difference).
-   3. [ ] Only sending pointers to rodata string constants.
-   4. [ ] Streaming events to plot, e.g. ADC readings (though maybe random
+   - [ ] Only sending pointers to rodata string constants.
+   - [ ] Streaming events to plot, e.g. ADC readings (though maybe random
    data for qemu).
-   5. [ ] Streaming trace events.
-4. [ ] CBOR
-   1. [ ] The API needs improving to be able to avoid doing all the
+   - [ ] Streaming trace events.
+- [ ] CBOR
+   - [ ] The API needs improving to be able to avoid doing all the
    decoding on the stack as a return value. For example, read/write
    memory doesn't need to materialise all of the bytes on the stack,
    it could use an iterator for decode, and a span for encode.
-   2. [ ] Supporting structs is not currently done. The constructor
+   - [ ] Supporting structs is not currently done. The constructor
    could probably be used as an RPC function, so constructing could be
    done, but destructing is more tricky. One solution for POD
    structs is to infer fields from default constructor, see
    <https://github.com/Mizuchi/ForeachMember>. Or have a way for users
    to define serialization of their struct.
-5. [ ] The circular buffer has a few TODOs to improve it.
-6. [ ] The COBS layer could have input & output iterators, which could
+- [ ] The circular buffer has a few TODOs to improve it.
+- [ ] The COBS layer could have input & output iterators, which could
 then be used to have views-like interfaces and make defining the CCF
 layer neater.
 
 
 ## Demo & Resource use
 
-There is a demo in the [FreeRTOS-Demo/](/FreeRTOS-Demo/) folder,
+There is a demo in the [FreeRTOS-Demo/](#FreeRTOS-Demo) folder,
 with detailed information about where the flash/memory use comes from.
 
 A summary of the resurce use is copied below from the
-[FreeRTOS-Demo/README.md](/FreeRTOS-Demo/README.md) file.
+[FreeRTOS-Demo/README.md](#FreeRTOS-Demo) file.
 
 <!-- Table starts here -->
 
@@ -174,6 +176,7 @@ order for the checksum because that is what I'm used to writing.
 
 | `ID: u8` | `data: u8[]/CBOR` | `checksum: u32` |
 |----------|-------------------|-----------------|
+|          |                   |                 |
 
 The ID is a channel ID/tag, the data is a variable length of bytes (the
 length is given by the framing layer), and the checksum is the FNV-1A
@@ -200,5 +203,6 @@ I chose CBOR because it is easy to encode/decode into a compact format,
 supports many types (more than I end up using).
 
 ## Tweaks/defines
-- `DEFERRED_FORMATTING` (or host-side formatting) means you can avoid
-doing `printf` on the micro, which might save some code space.
+- [`DEFERRED_FORMATTING`](#DEFERRED_FORMATTING) (or host-side
+formatting) means you can avoid doing `printf` on the microcontroller,
+which might save some code space.

@@ -1,4 +1,6 @@
 /**
+\file
+\brief Compile-time string manipulation.
 
 # Compile-time string manipulation
 

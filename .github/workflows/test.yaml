@@ -49,7 +49,10 @@ jobs:
                     make compare p=minsizerel
                 )
 
+                doxygen Doxygen
+
                 mkdir public
+                mv docs/html/* public/
                 mv FreeRTOS-Demo/build/minsizerel/compare/* public/
                 mv test.html public/
 

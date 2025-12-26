@@ -1,4 +1,5 @@
 /**
+\file
 
 Include this at the end of headers to undefine the debug macros.
 

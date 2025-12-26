@@ -1,4 +1,6 @@
 /**
+\file
+\brief Simple non-cryptographic hash with decent performance.
 
 # FNV-1A hash
 
@@ -38,6 +40,7 @@ namespace Fnv1a
     constexpr uint32_t initialHash = 0x811c9dc5;
     constexpr size_t size = sizeof(initialHash);
 
+    /// Update the hash with the given byte.
     constexpr uint32_t feed(uint32_t hash, uint8_t byte)
     {
         hash ^= byte;
@@ -45,6 +48,7 @@ namespace Fnv1a
         return hash;
     }
 
+    /// Compute the hash over the given span.
     template<size_t Size>
     constexpr uint32_t checksum(std::span<uint8_t, Size> span, uint32_t hash = initialHash)
     {
@@ -55,6 +59,8 @@ namespace Fnv1a
         return hash;
     }
 
+    /// Computes the hash on span[:-4] and places it at the end of
+    /// the span.
     template<size_t Size>
     constexpr void putAtEnd(std::span<uint8_t, Size> span, uint32_t hash = initialHash)
     {
@@ -70,6 +76,8 @@ namespace Fnv1a
         span[end - 1] = static_cast<uint8_t>(got >> 24);
     }
 
+    /// Checks that the span[:-4] sums to the same has as is stored
+    /// at span[-4:].
     template<size_t Size>
     constexpr bool checkAtEnd(std::span<uint8_t, Size> span, uint32_t hash = initialHash)
     {

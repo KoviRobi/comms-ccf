@@ -1,4 +1,6 @@
 /**
+\file
+\brief Remote procedure support.
 
 # Remote Procedure Call (RPC)
 
@@ -82,7 +84,10 @@ struct Type<std::tuple<Ts...>>
 class NonTemplatedCall
 {
 public:
+    /// Encodes the schema for the function into `seq`.
     prototype(bool, schema, (self_arg(NonTemplatedCall) Cbor::Sequence<Cbor::Major::Array> & seq));
+    /// Calls this function with the encoded args in `args` and encodes
+    /// the return into `ret`.
     prototype(bool, call, (self_arg(NonTemplatedCall) std::span<uint8_t> & args, std::span<uint8_t> & ret));
 };
 
@@ -181,6 +186,7 @@ public:
           }(std::index_sequence_for<Calls...>{})
       } { }
 
+    /// Encode the schema for all the RPC functions onto buf.
     bool schema(std::span<uint8_t> & buf) const
     {
         Cbor::Sequence<Cbor::Major::Array> seq(buf, sizeof...(Calls));
@@ -196,6 +202,8 @@ public:
         return seq.as_expected();
     }
 
+    /// Calls the given RPC function (by index n) using the encoded
+    /// arguments in `args` and encodes the result into `ret`.
     bool call(size_t n, std::span<uint8_t> & args, std::span<uint8_t> & ret) const
     {
         if (n == 0)
