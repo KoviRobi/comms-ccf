@@ -13,7 +13,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from squarify import normalize_sizes, squarify
 
 import binutils_mapfile.utils as utils
-from binutils_mapfile.parser import Area, InputSection, MapFile, OutputSection
+from binutils_mapfile.parser import Area, InputSection, MapFile, OutputSection, Section
 
 Region = Area | OutputSection | InputSection
 
@@ -22,6 +22,14 @@ random = Random(1234)
 
 def random_palette(_) -> str:
     return f"#{random.randint(0, ((1 << 24) - 1)):06X}"
+
+
+def obj_palette(area_or_section) -> str:
+    hex = random.randint(0, ((1 << 24) - 1))
+    if isinstance(area_or_section, Section):
+        obj_hex = hash(area_or_section.object) & ((1 << 24) - 1)
+        hex = (obj_hex & 0xF0F0F0) | (hex & 0x0F0F0F)
+    return f"#{hex:06X}"
 
 
 env = Environment(
@@ -72,7 +80,7 @@ class SvgOutput:
 def svg(
     mapfile: MapFile,
     file: t.TextIO = sys.stdout,
-    palette: t.Callable[[Region], str] = random_palette,
+    palette: t.Callable[[Region], str] = obj_palette,
     width: int = 297,
     height: int = 210,
     area_overlay: bool = True,
