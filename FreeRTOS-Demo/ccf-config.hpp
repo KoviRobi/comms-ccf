@@ -1,3 +1,7 @@
+/**
+\file
+\brief Config for the Comms-CCF use.
+*/
 #pragma once
 
 #include "mutex.hpp"

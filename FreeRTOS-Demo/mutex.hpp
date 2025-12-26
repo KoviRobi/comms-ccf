@@ -1,3 +1,7 @@
+/**
+\file
+\brief Simple wrapper around the FreeRTOS mutex.
+*/
 #pragma once
 
 #include <FreeRTOS.h>

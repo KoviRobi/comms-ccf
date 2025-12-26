@@ -1,6 +1,8 @@
 /**
+\test
 
-This code parses the markdown table in comms-ccf/cbor.hpp, which has the following format
+This code parses the markdown table in
+[comms-ccf/cbor.hpp](#comms-ccf/cbor.hpp), which has the following format
 
     *Marker for test/cbor.cpp*
 

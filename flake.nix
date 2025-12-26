@@ -14,6 +14,7 @@
             pkgs.stdenv.cc
             pkgs.clang-tools
             pkgs.cmake
+            pkgs.doxygen
             pkgs.ninja
             pkgs.black
             pkgs.pyright

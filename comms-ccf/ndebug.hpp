@@ -1,4 +1,5 @@
 /**
+\file
 
 The common debug ignore macros. If including this in a header, don't
 forget to:

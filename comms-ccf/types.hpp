@@ -1,4 +1,6 @@
 /**
+\file
+\brief Simple type utilities e.g. smallest type for given value.
 
 # Type utilities
 

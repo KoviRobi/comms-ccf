@@ -1,4 +1,6 @@
 /**
+\file
+\brief Remote procedure support.
 
 # Remote Procedure Call (RPC)
 

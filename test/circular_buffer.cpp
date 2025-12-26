@@ -1,3 +1,9 @@
+/**
+\file
+
+Runs some checks on the circular_buffer.
+
+*/
 #include "circular_buffer.hpp"
 
 #include "test_utils.hpp"
@@ -19,6 +25,9 @@ CircularBuffer<uint8_t, BUF_SIZE, MAX_PKT_SIZE> buf;
 std::optional<decltype(buf)::Frame> frame;
 std::back_insert_iterator ins{buf};
 
+/// \test
+/// Ensure that inserting a too large packet into the queue is handled
+/// safely (dropped).
 static bool test_insert_more_than_max_pkt_size()
 {
     frame.reset();
@@ -34,6 +43,8 @@ static bool test_insert_more_than_max_pkt_size()
     return true;
 }
 
+/// \test
+/// Tests filling the queue with maximum sized packets.
 static bool test_fill_queue_max_pkt_size()
 {
     frame.reset();
@@ -60,6 +71,8 @@ static bool test_fill_queue_max_pkt_size()
     return true;
 }
 
+/// \test
+/// Tests filling the queue with small packets.
 static bool test_fill_queue_small_pkts()
 {
     frame.reset();

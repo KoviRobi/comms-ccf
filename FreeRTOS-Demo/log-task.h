@@ -1,3 +1,7 @@
+/**
+\file
+\brief FreeRTOS Task which just logs periodically over Comms-CCF.
+*/
 #pragma once
 
 #ifdef __cplusplus

@@ -1,4 +1,7 @@
 /**
+\file
+\brief Simple framing (marking packet start/stop) with
+self-synchronisation.
 
 # Constant Overhead Byte Stuffing (COBS)
 

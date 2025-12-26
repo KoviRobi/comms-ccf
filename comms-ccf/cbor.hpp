@@ -1,4 +1,7 @@
 /**
+\file
+\brief Encoding for structured data (numbers, strings, bytes, arrays
+and maps). Also supports custom tags.
 
 # Concise Binary Object Representation (CBOR)
 
@@ -381,22 +384,20 @@ typedef _Float16 half;
     template<>
     bool encode<unsigned long long>(Major major, unsigned long long value, std::span<uint8_t> & buf);
 
-    /// Template functionality
-
+    /// \brief Parametrized CBOR interface.
+    ///
+    /// Valid data which can be encoded has the following methods:
+    ///
+    ///     static bool encode(T value, std::span<uint8_t> & buf);
+    ///     static std::optional<T> decode(std::span<uint8_t> & buf);
+    ///     static size_t maxSize();
+    ///
+    /// Though C++ doesn't require this and in fact is better at giving
+    /// compile-errors (rather than link errors) if it is commented out, as then
+    /// it doesn't assume it is defined in a different object.
     template<typename T>
     struct Cbor
     {
-        /*
-         * Interface to this template:
-
-        static bool encode(T value, std::span<uint8_t> & buf);
-        static std::optional<T> decode(std::span<uint8_t> & buf);
-        static size_t maxSize();
-
-         * Though C++ doesn't require this and in fact is better at giving
-         * compile-errors (rather than link errors) if it is commented out, as then
-         * it doesn't assume it is defined in a different object.
-         */
     };
 
     template<typename I> requires std::integral<I> && (!std::same_as<I, bool>)

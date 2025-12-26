@@ -1,4 +1,5 @@
 /**
+\file
 
 Colorize debug levels
 

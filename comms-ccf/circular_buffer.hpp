@@ -1,4 +1,6 @@
 /**
+\file
+\brief Buffer for queuing received bytes.
 
 # Circular buffer
 
@@ -41,18 +43,18 @@ This does mean that we need to know how big a packet can be (specifically,
 how many bytes to allocate for the packet size pointer), but this is
 fine for now.
 
-TODO: Currently this was written for architectures which don't reorder
+\todo Currently this was written for architectures which don't reorder
 reads/writes, in my case small microcontrollers without caches and write
 buffers, but needs to be fixed by using atomics on the cursors and the
 buffer to ensure the cursors point to valid data (by the time the updated
 cursor is read, the value at that location has been written).
 
-TODO: This does not expose an interface for DMA engines, but this could
+\todo This does not expose an interface for DMA engines, but this could
 fairly easily be added by getting the current next contiguous unused
 part of the buffer (i.e. the part before any wrapping) and passing that
 to the DMA engine.
 
-TODO: Forward and bidirectional iterator/range for Iterator/Frame.
+\todo Forward and bidirectional iterator/range for Iterator/Frame.
 
 */
 
