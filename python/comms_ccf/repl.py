@@ -56,10 +56,11 @@ class Stdio:
             return await result
 
 
-async def eval_expr(expr, locals) -> object:
+async def eval_expr(expr, locals: dict[str, object]) -> object:
+    locals.setdefault("_", None)
     # Patch line to be able to use await inside by making it an
     # (async) generator
-    line = f"((\n{expr}\n) for _ in '_')"
+    line = f"((\n{expr}\n) for _ in (_,))"
     expr = eval(line, locals, locals)
     if isinstance(expr, AsyncGenerator):
         expr = await expr.__anext__()
@@ -192,7 +193,9 @@ async def repl(io, locals, debug=False):
         if not line:  # Empty line
             continue
         try:
-            await io.print("out>", await eval_expr(line, locals))
+            result = await eval_expr(line, locals)
+            locals["_"] = result
+            await io.print("out>", result)
         except Exception as e:
             await io.print(traceback.format_exc())
             if debug:
