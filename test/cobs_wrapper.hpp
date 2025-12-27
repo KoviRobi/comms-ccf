@@ -2,6 +2,7 @@
 
 #include "cobs.hpp"
 
+#include <span>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -11,11 +12,19 @@ namespace Cobs
     class Decoder;
 }
 
+// #define IN
+#if defined(IN)
+using Iter = std::span<const uint8_t>::const_iterator;
+using CobsEncoder = Cobs::enc::iiter<Iter, Iter>;
+#else
+using CobsEncoder = std::span<const uint8_t>;
+#endif
+
 extern "C"
 {
-    Cobs::Encoder * cobsEncoderNew(const uint8_t * src, size_t srcLen);
-    void cobsEncoderDelete(Cobs::Encoder * state);
-    size_t cobsEncode(Cobs::Encoder * state, uint8_t * dest, size_t destLen);
+    CobsEncoder * cobsEncoderNew(const uint8_t * src, size_t srcLen);
+    void cobsEncoderDelete(CobsEncoder * state);
+    size_t cobsEncode(CobsEncoder * state, uint8_t * dest, size_t destLen);
 
     Cobs::Decoder * cobsDecoderNew();
     void cobsDecoderDelete(Cobs::Decoder * state);
