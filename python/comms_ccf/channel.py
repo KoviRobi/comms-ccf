@@ -45,10 +45,10 @@ class Channels:
         while True:
             try:
                 chan, data = await self._transport.recv()
-                queue = self._channels.get(chan)
-                if queue is not None:
+                queue = self._channels.get(chan, ())
+                if queue and queue is not None:
                     await queue.put(data)
-                else:
+                elif queue == ():
                     name = chan
                     if chan in Channel:
                         name = Channel(chan).name
