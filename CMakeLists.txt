@@ -66,6 +66,14 @@ add_build_and_test(
         --verbose --no-repl -- stdio $<TARGET_FILE:rpc>
 )
 
+add_executable(iter test/iter.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_include_directories(iter PUBLIC comms-ccf/)
+add_build_and_test(
+    NAME iter_demo
+    DEPENDS iter
+    COMMAND $<TARGET_FILE:iter>
+)
+
 add_executable(rpc_inline_vtable test/rpc.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
 target_compile_definitions(rpc_inline_vtable PUBLIC INLINE_VTABLE)
 target_include_directories(rpc_inline_vtable PUBLIC comms-ccf/)

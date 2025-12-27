@@ -67,6 +67,8 @@ not yet demonstrated.
 then be used to have views-like interfaces and make defining the CCF
 layer neater.
 
+https://www.fluentcpp.com/2019/08/16/making-c-pipes-compatible-with-stl-algorithms/
+
 
 ## Demo & Resource use
 

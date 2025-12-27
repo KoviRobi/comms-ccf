@@ -1,18 +1,20 @@
 #include "cobs_wrapper.hpp"
 
 #include "cobs.hpp"
+#include <algorithm>
 
-Cobs::Encoder * cobsEncoderNew(const uint8_t * src, size_t srcLen)
+#if defined(IN)
+CobsEncoder * cobsEncoderNew(const uint8_t * src, size_t srcLen)
 {
-    return new Cobs::Encoder(std::span{src, srcLen});
+    return new CobsEncoder(std::span<const uint8_t>{src, srcLen});
 }
 
-void cobsEncoderDelete(Cobs::Encoder * state)
+void cobsEncoderDelete(CobsEncoder * state)
 {
     delete state;
 }
 
-size_t cobsEncode(Cobs::Encoder * state, uint8_t * dest, size_t destLen)
+size_t cobsEncode(CobsEncoder * state, uint8_t * dest, size_t destLen)
 {
     size_t index = 0;
     for (const auto byte : *state)
@@ -25,6 +27,27 @@ size_t cobsEncode(Cobs::Encoder * state, uint8_t * dest, size_t destLen)
     }
     return index;
 }
+#else
+CobsEncoder * cobsEncoderNew(const uint8_t * src, size_t srcLen)
+{
+    return new std::span{src, srcLen};
+}
+
+void cobsEncoderDelete(CobsEncoder * state)
+{
+    delete state;
+}
+
+size_t cobsEncode(CobsEncoder * state, uint8_t * dest, size_t destLen)
+{
+    std::span span{dest, destLen};
+    Cobs::enc::oiter enc{span};
+    auto [in, out] = std::ranges::copy(*state, enc);
+    out.flush();
+    *state = state->subspan(in - state->begin());
+    return out.outBegin - span.begin();
+}
+#endif
 
 Cobs::Decoder * cobsDecoderNew()
 {

@@ -102,6 +102,40 @@ namespace Fnv1a
         }
         return got == expected;
     }
+
+    struct iiter;
+    struct iiter_pipe
+    {
+        template<class T>
+        constexpr iiter operator|(T);
+    };
+    struct iiter
+    {
+        static constexpr iiter_pipe operator()();
+        using value_type = uint8_t;
+        using difference_type = ptrdiff_t;
+        constexpr value_type operator*() const;
+        constexpr iiter & operator++();
+        constexpr iiter operator++(int);
+    };
+    static_assert(std::input_iterator<iiter>);
+
+    struct oiter;
+    struct oiter_pipe
+    {
+        template<class T>
+        constexpr oiter operator>>(T);
+    };
+    struct oiter
+    {
+        static constexpr oiter_pipe operator()();
+        using value_type = uint8_t;
+        using difference_type = ptrdiff_t;
+        constexpr value_type & operator*();
+        constexpr oiter & operator++();
+        constexpr oiter operator++(int);
+    };
+    static_assert(std::output_iterator<oiter, uint8_t>);
 };
 
 // This is a header, undefine the debugf macro
