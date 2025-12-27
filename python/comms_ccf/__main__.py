@@ -47,7 +47,8 @@ async def init_locals(rpc: Rpc):
     locals["_call"] = lambda n, *args, **kwargs: rpc(n, args, **kwargs)
     locals["help"] = rpc.help
     locals["hexdump"] = hexdump
-    locals["dir"] = dir
+    locals["dir"] = lambda: list(locals.keys() - ["__builtins__"])
+    locals["locals"] = lambda: {k: v for k, v in locals.items() if k != "__builtins__"}
 
     print("Use help(name=None) for discovered methods")
     print("(optionally name to document just that method)")
