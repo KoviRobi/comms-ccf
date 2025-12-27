@@ -53,8 +53,6 @@ namespace Cobs
         return dataSize + overhead;
     }
 
-    class IteratorEnd { };
-
     /// Encodes data from a buffer (given at constructino time) to the
     /// output of the iterator.
     ///
@@ -75,7 +73,7 @@ namespace Cobs
         }
 
         Encoder begin()  const { return *this; }
-        IteratorEnd end() const { return {}; }
+        std::nullptr_t end() const { return {}; }
 
         // Iterator functionality
         using difference_type = ptrdiff_t;
@@ -84,7 +82,7 @@ namespace Cobs
         value_type operator*() const;
         Encoder & operator++();
         Encoder operator++(int) { return ++*this; }
-        bool operator!=(IteratorEnd) const;
+        bool operator!=(std::nullptr_t) const;
 
     private:
         /// Encoding by first finding the run-length, then outputting the

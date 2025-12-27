@@ -85,7 +85,7 @@ namespace Cobs
         return *this;
     }
 
-    bool Encoder::operator!=(IteratorEnd) const
+    bool Encoder::operator!=(std::nullptr_t) const
     {
         bool atEnd = (runIndex == data.size()) && runHeaderOutput;
         return !atEnd;
