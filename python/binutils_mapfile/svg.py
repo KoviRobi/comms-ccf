@@ -27,8 +27,8 @@ def random_palette(_) -> str:
 def obj_palette(area_or_section) -> str:
     hex = random.randint(0, ((1 << 24) - 1))
     if isinstance(area_or_section, Section):
-        obj_hex = hash(area_or_section.object) & ((1 << 24) - 1)
-        hex = (obj_hex & 0xF0F0F0) | (hex & 0x0F0F0F)
+        hex = hash(area_or_section.object) & ((1 << 24) - 1)
+    hex = (hex & 0x3F3F3F) | 0x808080
     return f"#{hex:06X}"
 
 
