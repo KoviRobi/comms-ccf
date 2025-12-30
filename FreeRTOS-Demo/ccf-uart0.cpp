@@ -27,6 +27,11 @@ static std::atomic_bool txBusy;
 /// Called by the UART interrupt handler when it receives a character.
 static void commsCcfRx(uint8_t byte)
 {
+    // An easy way to debug received messages by sending them back. The
+    // RPC accommodates this by alternating the sequence number.
+#if !defined(NDEBUG)
+    UARTCharPutNonBlocking(UART0_BASE, byte);
+#endif
     // Safety: called from the UART interrupt handler
     if (ccf.unsafeGetUnderlying().receiveCharacter(byte))
     {

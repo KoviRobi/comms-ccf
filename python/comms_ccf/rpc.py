@@ -17,7 +17,11 @@ from comms_ccf.transport import DEFAULT_TIMEOUT
 
 
 class Rpc:
-    def __init__(self, channels: Channels, seqNo: int = randint(0, 0xFF)):
+    def __init__(self, channels: Channels, seqNo: int = randint(0, 0xFF) & ~1):
+        """
+        Note: Even numbers are to the device, odd numbers are from
+        the device
+        """
         self._channels = channels
         self._methods: dict[str, t.Callable[..., t.Any]] = {"schema": self.schema}
         self._doc = pydoc.TextDoc()
@@ -28,12 +32,13 @@ class Rpc:
     ) -> t.Any:
         async with asyncio.timeout(timeout):
             seqNo = self._seqNo
-            self._seqNo = (self._seqNo + 1) & 0xFF
+            self._seqNo = (self._seqNo + 2) & 0xFF
             data = int.to_bytes(seqNo) + int.to_bytes(n) + dumps(args)
             await self._channels.send(Channel.RPC, data, timeout=timeout)
             while True:
                 data = await self._channels.recv(Channel.RPC, timeout=timeout)
-                if data[0] != seqNo:
+                if data[0] != seqNo + 1:
+                    print("Bad seqNo", data[0], seqNo + 1)
                     continue
                 function = data[1]
                 data = data[2:]

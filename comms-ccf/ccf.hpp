@@ -204,7 +204,7 @@ public:
                 continue;
             }
             pktBuf[0] = channel;
-            pktBuf[1] = seqNo;
+            pktBuf[1] = seqNo + 1;
             pktBuf[2] = function;
             auto respLen = static_cast<size_t>(ret.data() - pktBuf);
             std::span resp{pktBuf + sizeof(channel), respLen - sizeof(channel)};
