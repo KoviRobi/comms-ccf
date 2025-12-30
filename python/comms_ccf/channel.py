@@ -68,6 +68,8 @@ class Channels:
                 traceback.print_exception(e)
                 if debug:
                     pdb.post_mortem(e.__traceback__)
+                else:
+                    raise
 
     async def send(
         self, channel: int, data: bytes, *, timeout: float = DEFAULT_TIMEOUT
