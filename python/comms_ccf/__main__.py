@@ -5,6 +5,7 @@ Connects to a socket, process, or serial port.
 """
 
 import asyncio
+import pdb
 import signal
 import sys
 import time
@@ -32,7 +33,7 @@ async def demo_rpc(rpc: Rpc):
             print("Exception in demo:", str(e) or repr(e))
 
 
-async def init_locals(rpc: Rpc):
+async def init_locals(rpc: Rpc, debug: bool):
     while True:
         try:
             await rpc.discover()
@@ -41,6 +42,8 @@ async def init_locals(rpc: Rpc):
             raise  # No point in trying again
         except Exception as e:
             print("Failed to discover RPC:", str(e) or repr(e))
+            if debug:
+                pdb.post_mortem()
             time.sleep(0.2)
 
     locals = {k: v for k, v in rpc.methods().items()}
@@ -109,7 +112,7 @@ async def amain():
             background_tasks.add(channels.loop, args.debug)
 
             if args.repl or args.script_file:
-                locals = await init_locals(rpc)
+                locals = await init_locals(rpc, args.debug)
                 await demo_rpc(rpc)
 
                 if args.script_file:
