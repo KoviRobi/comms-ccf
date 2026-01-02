@@ -2,8 +2,11 @@
 Simple REPL with history and tab completion (if readline is present)
 """
 
+from __future__ import annotations
+
 import asyncio
 import io
+import os
 import pdb
 import re
 import sys
@@ -24,7 +27,8 @@ history_file = Path.home() / ".cache" / "comms-ccf_history"
 
 
 class Console(Protocol):
-    def close(self, reason: str) -> None: ...
+    async def __aenter__(self) -> Console: ...
+    async def __aexit__(self, ty, exc, tb): ...
     async def input(self, prompt: str = "") -> str: ...
     async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None: ...
 
@@ -33,10 +37,15 @@ class Stdio:
     def __init__(self, loop: asyncio.AbstractEventLoop):
         self._loop = loop
         self._closed = self._loop.create_future()
+        self._termios = None
+        self._old_termattr = None
 
-    def close(self, reason: str):
+    async def __aenter__(self) -> Console:
+        return self
+
+    async def __aexit__(self, ty, exc, tb):
         if not self._closed.done():
-            self._closed.set_exception(SystemExit(reason))
+            self._closed.set_exception(SystemExit())
 
     async def input(self, prompt: str = "") -> str:
         thread = asyncio.to_thread(lambda: input(prompt))
@@ -168,7 +177,7 @@ async def script(script_file: Path, locals):
         return errors
 
 
-async def repl(io, locals, debug=False):
+async def repl(console, locals, debug=False):
     if readline and rlcompleter:
         completer = rlcompleter.Completer(namespace=locals)
         readline.set_completer(completer.complete)
@@ -184,7 +193,7 @@ async def repl(io, locals, debug=False):
 
     while True:
         try:
-            line = await io.input("in>  ")
+            line = await console.input("in>  ")
             line = line.strip()
             if readline:
                 readline.append_history_file(1000, str(history_file))
@@ -195,8 +204,8 @@ async def repl(io, locals, debug=False):
         try:
             result = await eval_expr(line, locals)
             locals["_"] = result
-            await io.print("out>", result)
+            await console.print("out>", await eval_expr(line, locals))
         except Exception as e:
-            await io.print(traceback.format_exc())
+            await console.print(traceback.format_exc())
             if debug:
                 pdb.post_mortem(e.__traceback__)

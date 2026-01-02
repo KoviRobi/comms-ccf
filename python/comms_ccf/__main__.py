@@ -22,8 +22,6 @@ from comms_ccf.repl import Stdio, repl, script
 from comms_ccf.rpc import Rpc
 from comms_ccf.transport import StreamTransport
 
-console = None
-
 
 async def demo_rpc(rpc: Rpc):
     if add := getattr(rpc, "add", None):
@@ -95,11 +93,12 @@ async def amain():
         [t.Any],
         t.AsyncContextManager[tuple[asyncio.StreamReader, asyncio.StreamWriter], t.Any],
     ] = args.func
-    async with func(args) as context:
+
+    loop = asyncio.get_event_loop()
+    async with func(args) as context, Stdio(loop) as console:
         rx, tx = context
 
         transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
-        loop = asyncio.get_event_loop()
         channels = Channels(transport, loop)
         rpc = Rpc(channels)
 
@@ -121,8 +120,6 @@ async def amain():
                         raise SystemExit(errors)
 
                 if args.repl:
-                    global console
-                    console = Stdio(loop)
                     await repl(console, locals, args.debug)
 
         finally:
@@ -133,8 +130,6 @@ async def amain():
 
 
 def quit(*args, **kwargs):
-    if console:
-        console.close("Ctrl-C received")
     print("Press Ctrl-D to exit")
 
 
