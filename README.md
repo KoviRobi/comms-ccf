@@ -142,6 +142,15 @@ This impacts design in a couple of ways:
 - CPU is much faster than the transport, so we can do checksumming as
   we copy the received byte
 
+  **Note:** This breaks down with SEGGER_RTT, specifically I found that
+  using JLink + SEGGER_RTT doesn't do flow control on the host TX side
+  (where it could/should), so for now I recommend setting the down buffer
+  size to be the maximum packet size (e.g. `-DBUFFER_SIZE_DOWN=256` from
+  the default 16). On the other hand, the up buffer size has a default
+  of 1024B, you could reduce that to 256B so still saving overall space.
+
+  - [ ] TODO: Maybe this can be avoided with PyOCD?
+
 - Channel can be connected/disconnected, so need a framing;
 
 - Channel isn't 100% error free, due to glitches during
