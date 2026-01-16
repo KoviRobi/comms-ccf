@@ -47,31 +47,37 @@ int main()
 #endif
 
     std::array<uint8_t, Cobs::maxEncodedSize(in.size())> out{};
-    Cobs::enc::iiter inEnc{in};
-    Cobs::enc::oiter outEnc{out};
-    #if 0
-    auto in_out = std::ranges::copy(in, outEnc);
-    outEnc = in_out.out;
-    #else
-    size_t i = 0;
-    for (auto b : in)
+    Cobs::Encoder inEnc;
+    Cobs::Encoder outEnc;
+    auto inRange = inEnc.input(in.cbegin(), in.cend());
     {
-        #if 1
-        *outEnc = b;
-        ++outEnc;
+        auto outRange = outEnc.output(out.begin(), out.end());
+        #if 0
+        auto in_out = std::ranges::copy(in, outRange);
+        outRange = in_out.out;
         #else
-        // TODO: If we make iterator have a ref to the buffer/state then this could work
-        *outEnc++ = b;
+        size_t i = 0;
+        for (auto b : in)
+        {
+            #if 1
+            *outRange = b;
+            ++outRange;
+            #else
+            // TODO: Actually this is not suitable for output iterators,
+            // consider filter, you need to make the decision before
+            // moving on.
+            *outRange++ = b;
+            #endif
+        }
         #endif
+        // outRange.flush();
+        // return 0;
     }
-    #endif
-    outEnc.flush();
-    // return 0;
 
-    i = 0;
-    auto a = inEnc.begin();
+    size_t i = 0;
+    auto a = inRange.begin();
     auto b = out.begin();
-    while (a != inEnc.end() && b != out.end())
+    while (a != inRange.end() && b != out.end())
     {
         printf("%zu\t%d\t%d\n", i, *a, *b);
         ++i;

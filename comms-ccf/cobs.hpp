@@ -62,117 +62,69 @@ namespace Cobs
     class Encoder
     {
     public:
-        template<size_t Extent>
-        Encoder(std::span<const uint8_t, Extent> _data)
-        : data(_data), runLength(findRunLength()) { }
-
-        template<size_t Extent>
-        Encoder(std::span<uint8_t, Extent> span)
-            : Encoder(std::span{
-                reinterpret_cast<const uint8_t *>(span.data()),
-                span.size()})
-        {
-        }
-
-        Encoder begin()  const { return *this; }
-        std::nullptr_t end() const { return {}; }
-
-        // Iterator functionality
-        using difference_type = ptrdiff_t;
-        using value_type = uint8_t;
-
-        value_type operator*() const;
-        Encoder & operator++();
-        Encoder operator++(int) { return ++*this; }
-        bool operator!=(std::nullptr_t) const;
-
-    private:
-        /// Encoding by first finding the run-length, then outputting the
-        /// header + run does loop over the data twice, but it allows us to
-        /// have an iterator format rather than copying to a buffer (because we
-        /// compute the header after the run) and then sending from the buffer.
-        /// And that might end up looping over the data twice too, the second
-        /// time in the copying from the buffer.
-        ///
-        /// Ultimately, not a problem until it is clear it becomes one.
-        uint8_t findRunLength();
-
-        std::span<const uint8_t> data;
-        /// A run is a sequence of contiguous non-zeroes (excluding the zero).
-        uint8_t runLength;
-        uint8_t runIndex = 0;
-        bool runHeaderOutput = false;
-    };
-    static_assert(std::input_iterator<Encoder>);
-
-    struct enc
-    {
         // Note: both iterator and range for now, to be able to do
         // comparisons for "inBegin != inEnd"
-        template<class InBegin, class InEnd>
-        struct iiter
+        template<std::input_iterator InBegin, std::input_iterator  InEnd>
+        struct Input
         {
             using value_type = uint8_t;
             using difference_type = ptrdiff_t;
 
+            Encoder * enc;
             InBegin inBegin;
             // TODO: Normally we would have this outside of iterator
             InEnd inEnd;
-            /// A run is a sequence of contiguous non-zeroes (excluding the zero).
-            bool runHeaderOutput = false;
-            uint8_t runLength = 0;
-            uint8_t runIndex = 0;
-            uint8_t buf[maxRunLength];
 
-            constexpr iiter() { }
+            constexpr Input() { }
 
-            template<std::ranges::input_range R>
-            constexpr iiter(R && r)
-                : inBegin(std::cbegin(std::forward<R>(r))),
-                  inEnd(std::cend(std::forward<R>(r)))
+            template<std::input_iterator InBegin_, std::input_iterator InEnd_>
+            constexpr Input(Encoder * enc_, InBegin_ && inBegin_, InEnd_ && inEnd_)
+                : enc(enc_),
+                  inBegin(std::forward<InBegin_>(inBegin_)),
+                  inEnd(std::forward<InEnd_>(inEnd_))
             {
                 fill();
             }
 
-            constexpr iiter begin() const { return *this; }
-            constexpr iiter end() const { return *this; }
+            constexpr Input begin() const { return *this; }
+            constexpr Input end() const { return *this; }
 
             constexpr value_type operator*() const
             {
                 // return run header or current byte
-                if (!runHeaderOutput)
+                if (!enc->runHeaderOutput)
                 {
                     // Pointer to the first zero byte, not the last non-zero byte
-                    return runLength + 1;
+                    return enc->runLength + 1;
                 }
                 else
                 {
-                    return buf[runIndex];
+                    return enc->buf[enc->runIndex];
                 }
             }
-            constexpr iiter & operator++()
+            constexpr Input & operator++()
             {
                 // If not run header output, set it true
                 // If at end, refill buffer
-                if (!runHeaderOutput)
+                if (!enc->runHeaderOutput)
                 {
-                    runHeaderOutput = true;
+                    enc->runHeaderOutput = true;
                 }
-                else if (runIndex < runLength)
+                else if (enc->runIndex < enc->runLength)
                 {
-                    ++runIndex;
+                    ++enc->runIndex;
                 }
                 // Not `else if`, need to recalculate before dereference
-                if (runIndex == runLength)
+                if (enc->runIndex == enc->runLength)
                 {
                     if (inBegin != inEnd)
                     {
-                        if (runLength < maxRunLength)
+                        if (enc->runLength < maxRunLength)
                         {
                             // Skip over zero byte
                             ++inBegin;
                         }
-                        runHeaderOutput = false;
+                        enc->runHeaderOutput = false;
                         fill();
                     }
                 }
@@ -181,39 +133,34 @@ namespace Cobs
             constexpr void fill()
             {
                 for (
-                    runIndex = 0, runLength = 0;
+                    enc->runIndex = 0, enc->runLength = 0;
                     inBegin != inEnd &&
                         *inBegin != 0 &&
-                        runLength < maxRunLength;
-                    ++runLength, ++inBegin
+                        enc->runLength < maxRunLength;
+                    ++enc->runLength, ++inBegin
                 )
                 {
-                    buf[runLength] = *inBegin;
+                    enc->buf[enc->runLength] = *inBegin;
                 }
             }
-            constexpr iiter operator++(int)
+            constexpr Input operator++(int)
             {
                 const auto tmp  = *this;
                 ++*this;
                 return tmp;
             }
-            constexpr bool operator!=(const iiter &) const
+            constexpr bool operator!=(const Input &) const
             {
-                return !runHeaderOutput || runIndex < runLength || inBegin != inEnd;
+                return !enc->runHeaderOutput || enc->runIndex < enc->runLength || inBegin != inEnd;
             }
         };
-        // static_assert(std::input_iterator<iiter<const uint8_t *, const uint8_t *>>);
-        template<std::ranges::input_range R>
-        iiter(R && r) -> iiter<decltype(std::cbegin(r)), decltype(std::cend(r))>;
 
-        // struct irange
-        // {
-        //     template<class R>
-        //     constexpr irange(R && range);
-        //     constexpr iiter begin();
-        //     constexpr iiter end();
-        // };
-        // static_assert(std::ranges::input_range<irange>);
+        template<std::ranges::input_range R>
+        Input(R && r) -> Input<decltype(std::cbegin(r)), decltype(std::cend(r))>;
+
+        // static_assert(std::input_iterator<Input<const uint8_t *, const uint8_t *>>);
+        // static_assert(std::ranges::input_range<Input<const uint8_t *, const uint8_t *>>);
+
 
         // Note: both iterator and range for now, to be able to do
         // comparisons for "inBegin != inEnd"
@@ -225,50 +172,47 @@ namespace Cobs
         // for now
         // TODO: If we make iterator have a ref to the buffer/state then this could work
         template<class OutBegin, class OutEnd>
-        struct oiter
+        struct Output
         {
             using value_type = uint8_t;
             using difference_type = ptrdiff_t;
 
+            Encoder * enc;
             OutBegin outBegin;
+            // TODO: Normally we would have this outside of iterator
             OutEnd outEnd;
 
-            /// A run is a sequence of contiguous non-zeroes (excluding the zero).
-            bool runHeaderOutput = false;
-            uint8_t runIndex = 0;
-            uint8_t runLength = 0;
-            uint8_t buf[maxRunLength];
+            constexpr Output() { }
 
-            constexpr oiter() { }
-
-            template<std::ranges::output_range<value_type> R>
-            constexpr oiter(R && r)
-                : outBegin(std::begin(std::forward<R>(r))),
-                  outEnd(std::end(std::forward<R>(r)))
+            template<std::output_iterator<uint8_t> OutBegin_, std::output_iterator<uint8_t> OutEnd_>
+            constexpr Output(Encoder * enc_, OutBegin_ && outBegin_, OutEnd_ && outEnd_)
+                : enc(enc_),
+                  outBegin(std::forward<OutBegin_>(outBegin_)),
+                  outEnd(std::forward<OutEnd_>(outEnd_))
             {
             }
 
             constexpr value_type & operator*()
             {
                 // return current buf reference
-                return buf[runLength];
+                return enc->buf[enc->runLength];
             }
-            constexpr oiter & operator++()
+            constexpr Output & operator++()
             {
                 // Just keep copying into the buffer until we hit a
                 // delimiter or need another header
-                if (buf[runLength] == 0)
+                if (enc->buf[enc->runLength] == 0)
                 {
                     flush();
                 }
                 else
                 {
-                    if (runLength < maxRunLength)
+                    if (enc->runLength < maxRunLength)
                     {
-                        ++runLength;
+                        ++enc->runLength;
                     }
                     // Not else, we may now be at the end of the buffer
-                    if (runLength == maxRunLength)
+                    if (enc->runLength == maxRunLength)
                     {
                         // Otherwise it's time to copy the whole buffered
                         // data to the output
@@ -279,40 +223,110 @@ namespace Cobs
             }
             constexpr void flush()
             {
-                if (outBegin != outEnd && !runHeaderOutput)
+                if (outBegin != outEnd && !enc->runHeaderOutput)
                 {
-                    *outBegin++ = runLength + 1;
-                    runHeaderOutput= true;
+                    *outBegin++ = enc->runLength + 1;
+                    enc->runHeaderOutput= true;
                 }
                 for (
                     ;
-                    outBegin != outEnd && runIndex < runLength && buf[runIndex] != 0;
-                    ++runIndex
+                    outBegin != outEnd && enc->runIndex < enc->runLength && enc->buf[enc->runIndex] != 0;
+                    ++enc->runIndex
                 )
                 {
-                    *outBegin++ = buf[runIndex];
+                    *outBegin++ = enc->buf[enc->runIndex];
                 }
-                if (runIndex == runLength || buf[runIndex] == 0)
+                if (enc->runIndex == enc->runLength || enc->buf[enc->runIndex] == 0)
                 {
-                    runLength = 0;
-                    runIndex = 0;
-                    runHeaderOutput = false;
+                    enc->runLength = 0;
+                    enc->runIndex = 0;
+                    enc->runHeaderOutput = false;
                 }
             }
-            constexpr oiter operator++(int)
+            constexpr Output operator++(int)
             {
                 const auto tmp  = *this;
                 ++*this;
                 return tmp;
             }
-            constexpr bool operator!=(const oiter &) const
+            constexpr bool operator!=(const Output &) const
             {
-                return !runHeaderOutput || runIndex < runLength || outBegin != outEnd;
+                return !enc->runHeaderOutput || enc->runIndex < enc->runLength || outBegin != outEnd;
             }
         };
-        static_assert(std::output_iterator<oiter<uint8_t *, uint8_t>, uint8_t>);
+
         template<std::ranges::output_range<uint8_t>  R>
-        oiter(R && r) -> oiter<decltype(std::begin(r)), decltype(std::end(r))>;
+        Output(R && r) -> Output<decltype(std::begin(r)), decltype(std::end(r))>;
+
+        static_assert(std::output_iterator<Output<uint8_t *, uint8_t>, uint8_t>);
+
+        template<class InBegin, class InEnd>
+        Input<InBegin, InEnd> input(InBegin && inBegin, InEnd && inEnd)
+        {
+            return Input<InBegin, InEnd>(
+                this,
+                std::forward<InBegin>(inBegin),
+                std::forward<InEnd>(inEnd)
+            );
+        }
+
+        template<std::ranges::input_range R>
+        Input<
+            decltype(std::cbegin(std::forward<R>(std::declval<R>()))),
+            decltype(std::cend(std::forward<R>(std::declval<R>())))
+        > input(R && r)
+        {
+            return Input<
+                decltype(std::cbegin(std::forward<R>(r))),
+                decltype(std::cend(std::forward<R>(r)))
+            >(
+                this,
+                std::forward<decltype(std::cbegin(std::forward<R>(r)))>(
+                    std::cbegin(std::forward<R>(r))),
+                std::forward<decltype(std::cend(std::forward<R>(r)))>(
+                    std::cend(std::forward<R>(r)))
+            );
+        }
+
+        template<std::output_iterator<uint8_t> OutBegin, std::output_iterator<uint8_t> OutEnd>
+        Output<OutBegin, OutEnd> output(OutBegin && inBegin, OutEnd && inEnd)
+        {
+            return Output<OutBegin, OutEnd>(
+                this,
+                std::forward<OutBegin>(inBegin),
+                std::forward<OutEnd>(inEnd)
+            );
+        }
+
+        template<std::ranges::output_range<uint8_t> R>
+        Output<
+            decltype(std::begin(std::forward<R>(std::declval<R>()))),
+            decltype(std::end(std::forward<R>(std::declval<R>())))
+        > output(R && r)
+        {
+            return Output<
+                decltype(std::begin(std::forward<R>(r))),
+                decltype(std::end(std::forward<R>(r)))
+            >(
+                this,
+                std::forward<decltype(std::begin(std::forward<R>(r)))>(
+                    std::begin(std::forward<R>(r))),
+                std::forward<decltype(std::end(std::forward<R>(r)))>(
+                    std::end(std::forward<R>(r)))
+            );
+        }
+
+    private:
+        /// A run is a sequence of contiguous non-zeroes (excluding the zero).
+        uint8_t runLength = 0;
+        uint8_t runIndex = 0;
+        bool runHeaderOutput = false;
+        uint8_t buf[maxRunLength];
+
+    };
+
+    struct enc
+    {
     };
 
     /// Decodes data as a state-machine.
