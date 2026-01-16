@@ -243,7 +243,8 @@ public:
         uint8_t chan = static_cast<uint8_t>(channel);
         resp[0] = chan;
         Fnv1a::putAtEnd(resp);
-        for (auto c : Cobs::Encoder(resp))
+        Cobs::Encoder enc;
+        for (auto c : enc.input(resp))
         {
             txBuf.push_back(c);
         }

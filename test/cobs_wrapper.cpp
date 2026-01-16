@@ -1,6 +1,7 @@
 #include "cobs_wrapper.hpp"
 
 #include "cobs.hpp"
+
 #include <algorithm>
 
 #if defined(IN)
@@ -41,8 +42,11 @@ void cobsEncoderDelete(CobsEncoder * state)
 size_t cobsEncode(CobsEncoder * state, uint8_t * dest, size_t destLen)
 {
     std::span span{dest, destLen};
-    Cobs::enc::oiter enc{span};
-    auto [in, out] = std::ranges::copy(*state, enc);
+    Cobs::Encoder encoder;
+    auto out = encoder.output(span);
+    auto in_out = std::ranges::copy(*state, out);
+    auto in = in_out.in;
+    out = in_out.out;
     out.flush();
     *state = state->subspan(in - state->begin());
     return out.outBegin - span.begin();

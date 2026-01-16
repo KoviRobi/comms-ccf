@@ -47,31 +47,33 @@ int main()
 #endif
 
     std::array<uint8_t, Cobs::maxEncodedSize(in.size())> out{};
-    Cobs::enc::iiter inEnc{in};
-    Cobs::enc::oiter outEnc{out};
+    Cobs::Encoder inEnc;
+    Cobs::Encoder outEnc;
+    auto inRange = inEnc.input(in.cbegin(), in.cend());
+    auto outRange = outEnc.output(out.begin(), out.end());
     #if 0
-    auto in_out = std::ranges::copy(in, outEnc);
-    outEnc = in_out.out;
+    auto in_out = std::ranges::copy(in, outRange);
+    outRange = in_out.out;
     #else
     size_t i = 0;
     for (auto b : in)
     {
         #if 1
-        *outEnc = b;
-        ++outEnc;
+        *outRange = b;
+        ++outRange;
         #else
         // TODO: If we make iterator have a ref to the buffer/state then this could work
-        *outEnc++ = b;
+        *outRange++ = b;
         #endif
     }
     #endif
-    outEnc.flush();
+    outRange.flush();
     // return 0;
 
     i = 0;
-    auto a = inEnc.begin();
+    auto a = inRange.begin();
     auto b = out.begin();
-    while (a != inEnc.end() && b != out.end())
+    while (a != inRange.end() && b != out.end())
     {
         printf("%zu\t%d\t%d\n", i, *a, *b);
         ++i;

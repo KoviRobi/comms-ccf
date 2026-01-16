@@ -19,7 +19,8 @@ int main()
     std::array<uint8_t, Cobs::maxEncodedSize(buf.size())> enc;
 
     i = 0;
-    for (auto byte : Cobs::Encoder(std::span{buf}))
+    Cobs::Encoder encoder{};
+    for (auto byte : encoder.input(std::span{buf}))
     {
         if (i == enc.size())
         {
