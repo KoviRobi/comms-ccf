@@ -5,7 +5,6 @@ Connects to a socket, process, or serial port.
 """
 
 import asyncio
-import pdb
 import signal
 import sys
 import typing as t
@@ -22,6 +21,10 @@ from comms_ccf.rpc import Rpc
 from comms_ccf.tk.gui import TkGui
 from comms_ccf.transport import StreamTransport
 from comms_ccf.types import Console
+
+background_tasks = None
+rx = None
+tx = None
 
 
 async def demo_rpc(console: Console, rpc: Rpc):
@@ -93,6 +96,7 @@ async def amain():
     ] = args.func
     async with func(args) as context:
         loop = asyncio.get_event_loop()
+        global background_tasks
         background_tasks = BackgroundTasks(loop, args.debug)
 
         tk_gui = None
@@ -105,52 +109,56 @@ async def amain():
         else:
             console = Stdio(loop)
 
+        global rx, tx
         rx, tx = context
 
         transport = StreamTransport(rx, tx, log_fp=sys.stderr if args.verbose else None)
         channels = Channels(transport, console, loop)
         rpc = Rpc(channels, console, args.debug)
 
-        try:
-            # First open the log channel before starting the channels loop
-            if args.log:
-                output = console.print
-                if tk_gui is not None and tk_gui.logs is not None:
-                    logs = tk_gui.logs
+        # First open the log channel before starting the channels loop
+        if args.log:
+            output = console.print
+            if tk_gui is not None and tk_gui.logs is not None:
+                logs = tk_gui.logs
 
-                    def output(*row):
-                        return logs.insert_row(row)
+                def output(*row):
+                    return logs.insert_row(row)
 
-                background_tasks.add(
-                    print_logs, loop, channels, output, args.expect_logs
-                )
+            background_tasks.add(print_logs, loop, channels, output, args.expect_logs)
 
-            background_tasks.add(channels.loop, args.debug)
+        background_tasks.add(channels.loop, args.debug)
 
-            if args.repl or args.script_file:
-                locals = await init_locals(console, rpc, args.debug)
-                await demo_rpc(console, rpc)
+        if args.repl or args.script_file:
+            locals = await init_locals(console, rpc, args.debug)
+            await demo_rpc(console, rpc)
 
-                if args.script_file:
-                    errors = await script(args.script_file, locals)
-                    if errors:
-                        raise SystemExit(errors)
+            if args.script_file:
+                errors = await script(args.script_file, locals)
+                if errors:
+                    raise SystemExit(errors)
 
-                if args.repl:
-                    background_tasks.add(repl, console, locals, args.debug)
+            if args.repl:
+                background_tasks.add(repl, console, locals, args.debug)
 
-            if tk_gui is not None:
-                tk_gui.loop()
+        if tk_gui is not None:
+            tk_gui.loop()
 
-        finally:
-            background_tasks.suppress_exceptions.add(EOFError)
-            background_tasks.suppress_exceptions.add(asyncio.CancelledError)
-            tx.close()
-            await background_tasks.wait(timeout=5)
+        background_tasks.suppress_exceptions.add(EOFError)
+        background_tasks.suppress_exceptions.add(asyncio.CancelledError)
+        await background_tasks.wait()
 
 
 def quit(*args, **kwargs):
-    print("Press Ctrl-D to exit")
+    if rx:
+        rx.feed_eof()
+    if tx:
+        tx.close()
+    if console:
+        console.close("Quit")
+    if background_tasks:
+        background_tasks.cancel()
+    print("Bye")
 
 
 def main():

@@ -62,6 +62,9 @@ class Stdio:
         for result in asyncio.as_completed(tasks):
             return await result
 
+    def close(self, reason: str):
+        self._closed.cancel(reason)
+
 
 async def eval_expr(expr, locals: dict[str, object]) -> object:
     locals.setdefault("_", None)
