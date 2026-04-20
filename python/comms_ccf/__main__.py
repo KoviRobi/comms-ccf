@@ -37,12 +37,8 @@ async def init_locals(console: Console, rpc: Rpc, debug: bool):
         try:
             await rpc.discover()
             break
-        except EOFError:
-            raise  # No point in trying again
-        except Exception as e:
-            await console.print("Failed to discover RPC:", str(e) or repr(e))
-            if debug:
-                pdb.post_mortem()
+        except TimeoutError:
+            await console.print(".", end="")
             await asyncio.sleep(0.2)
 
     locals = {k: v for k, v in rpc.methods().items()}
