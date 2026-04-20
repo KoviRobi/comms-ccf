@@ -7,6 +7,7 @@ Connects to a socket, process, or serial port.
 import asyncio
 import signal
 import sys
+import time
 import typing as t
 from argparse import ArgumentParser
 from pathlib import Path
@@ -19,6 +20,7 @@ from comms_ccf.log import print_logs
 from comms_ccf.repl import Stdio, repl, script
 from comms_ccf.rpc import Rpc
 from comms_ccf.tk.gui import TkGui
+from comms_ccf.tk.plot import plotter
 from comms_ccf.transport import StreamTransport
 from comms_ccf.types import Console
 
@@ -65,6 +67,9 @@ async def amain():
     parser.add_argument(
         "--no-log", "-N", dest="log", action="store_false", help="Don't output logs"
     )
+    parser.add_argument(
+        "--no-plot", "-P", dest="plot", action="store_false", help="Don't plot events"
+    )
     parser.add_argument("--expect-logs", type=Path, help="Check logs against file")
     parser.add_argument(
         "--script-file", type=Path, help="Check `> command` gives `< value`"
@@ -101,7 +106,7 @@ async def amain():
 
         tk_gui = None
         if args.tk:
-            tk_gui = TkGui(args.log, args.repl)
+            tk_gui = TkGui(args.log, args.repl, args.plot)
 
         global console
         if tk_gui is not None and tk_gui.console is not None:
@@ -127,6 +132,21 @@ async def amain():
 
             background_tasks.add(print_logs, loop, channels, output, args.expect_logs)
 
+        # Plotting channel
+        if tk_gui is not None and tk_gui.plot is not None:
+            plot = tk_gui.plot
+
+            def plot_time(key, *args):
+                if len(args) == 1:
+                    x = time.time()
+                    y = args[0]
+                else:
+                    x = args[0]
+                    y = args[1]
+                return plot.add(key, x, y)
+
+            background_tasks.add(plotter, loop, channels, plot_time)
+
         background_tasks.add(channels.loop, args.debug)
 
         if args.repl or args.script_file:
@@ -142,7 +162,7 @@ async def amain():
                 background_tasks.add(repl, console, locals, args.debug)
 
         if tk_gui is not None:
-            tk_gui.loop()
+            background_tasks.add(asyncio.to_thread, tk_gui.loop)
 
         background_tasks.suppress_exceptions.add(EOFError)
         background_tasks.suppress_exceptions.add(asyncio.CancelledError)

@@ -4,6 +4,7 @@ import typing as t
 import janus
 
 from comms_ccf.tk.con import Console
+from comms_ccf.tk.plot import Plot
 from comms_ccf.tk.table import Table
 
 
@@ -74,13 +75,16 @@ class TkGui:
     console: AsyncConsole | None
     logs: Table | None
 
-    def __init__(self, logs: bool, console: bool) -> None:
+    def __init__(self, logs: bool, console: bool, plot: bool) -> None:
         self.console = None
         self.logs = None
+        self.plot = None
         if console:
             self.console = AsyncConsole()
         if logs:
             self.logs = Table("Severity", "Component", "Message")
+        if plot:
+            self.plot = Plot()
 
     def loop(self) -> None:
         root = tk.Tk()
@@ -97,6 +101,12 @@ class TkGui:
             cframe.pack(expand=True, fill="both")
             console_element = self.console.attach(cframe)
             console_element.pack_configure(expand=True)
+
+        if self.plot is not None:
+            cframe = tk.Frame(root)
+            cframe.pack(expand=True, fill="both")
+            console_element = self.plot.attach(cframe)
+
         root.mainloop()
         if self.console is not None:
             self.console.close("GUI closed")

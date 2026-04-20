@@ -28,6 +28,8 @@ from comms_ccf.types import Console
 class Channel(IntEnum):
     RPC = 0
     Log = 1
+    Trace = 2
+    Plot = 3
 
 
 class Channels:
