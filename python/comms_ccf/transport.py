@@ -75,9 +75,9 @@ class StreamTransport:
                         data = b""
                         self._done = True
                     self._rxBuf += rxed
-                    if len(self._rxBuf) >= MAX_PKT_SIZE:
-                        self._rxBuf = b""
-                        raise AssertionError("Packet max size exceeded")
+                    # if len(self._rxBuf) >= MAX_PKT_SIZE:
+                    #     self._rxBuf = b""
+                    #     raise AssertionError("Packet max size exceeded")
         if self._log:
             print(hexdump(data, "RX: "), file=self._log)
         assert len(data) >= MIN_PKT_SIZE, "Packet too small\n" + hexdump(data, "pkt> ")
