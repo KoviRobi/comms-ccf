@@ -59,6 +59,7 @@ enum class Channels : uint8_t
     Log = 1,
     /// \todo In-place trace tag to save bytes on trace data?
     Trace = 2,
+    Plot = 3,
     /// \todo Reserve some bits for flags? E.g. fragment/partial packet
     /// flag, CCF metadata/error flag?
 };
@@ -258,6 +259,23 @@ public:
             txBuf.notify();
             return true;
         }
+    }
+
+    template<typename... T>
+    bool sendCbor(Channels channel, T &&... t)
+    {
+        std::span<uint8_t> enc = std::span{pktBuf};
+        enc = enc.subspan(1); // Space for channel
+        const auto begin = enc.begin();
+        if (
+            (Cbor::Cbor<std::remove_cvref_t<T>>::encode(std::forward<T>(t), enc) && ...)
+        )
+        {
+            const auto end = enc.begin();
+            std::span out{begin, end};
+            return send(channel, out);
+        }
+        return false;
     }
 
     /// \fn std::optional< size_t > logToBuffer (std::span< uint8_t > &span, LogLevel level, uint8_t module, const char *fmt,...)

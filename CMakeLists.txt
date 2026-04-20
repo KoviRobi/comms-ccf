@@ -120,6 +120,17 @@ add_build_and_test(
         -- stdio $<TARGET_FILE:log>
 )
 
+# Demo of plotting
+add_executable(plot test/plot.cpp comms-ccf/cobs.cpp comms-ccf/cbor.cpp)
+target_include_directories(plot PUBLIC comms-ccf/)
+add_build_and_test(
+    NAME plot_demo
+    DEPENDS plot
+    COMMAND
+        uv run comms-ccf --no-repl --no-log
+        -- stdio $<TARGET_FILE:plot>
+)
+
 add_library(cobs_wrapper SHARED test/cobs_wrapper.cpp comms-ccf/cobs.cpp)
 target_include_directories(cobs_wrapper PUBLIC comms-ccf/ test/)
 add_library(fnv1a_wrapper SHARED test/fnv1a_wrapper.cpp)
