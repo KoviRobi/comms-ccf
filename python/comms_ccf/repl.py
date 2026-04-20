@@ -54,8 +54,10 @@ class Stdio:
                 raise
         return ""  # Some error on input
 
-    async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None:
-        thread = asyncio.to_thread(lambda: print(*strs, sep=sep, end=end))
+    async def print(
+        self, *strs: str, sep: str = " ", end: str = "\n", flush: bool = False
+    ) -> None:
+        thread = asyncio.to_thread(lambda: print(*strs, sep=sep, end=end, flush=flush))
         tasks = [self._closed, thread]
         for result in asyncio.as_completed(tasks):
             return await result

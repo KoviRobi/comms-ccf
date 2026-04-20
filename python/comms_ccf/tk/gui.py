@@ -44,9 +44,13 @@ class AsyncConsole:
         except janus.SyncQueueFull:
             self._container.after(100, self._respond, value)
 
-    async def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None:
+    async def print(
+        self, *strs: str, sep: str = " ", end: str = "\n", flush: bool = False
+    ) -> None:
         try:
-            await self._toTkQueue.async_q.put(("print", strs, {"sep": sep, "end": end}))
+            await self._toTkQueue.async_q.put(
+                ("print", strs, {"sep": sep, "end": end, "flush": flush})
+            )
         except janus.AsyncQueueShutDown:
             pass
 

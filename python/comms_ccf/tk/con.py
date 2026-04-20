@@ -24,9 +24,10 @@ class Console(tk.Frame):
         if text:
             self._output.insert(tk.END, str(text))
 
-    def print(self, *strs: str, sep: str = " ", end: str = "\n") -> None:
-        print("print strs", strs)
-        self.append_output(sep.join(strs) + end)
+    def print(
+        self, *strs: str, sep: str = " ", end: str = "\n", flush: bool = False
+    ) -> None:
+        self.append_output(sep.join(map(str, strs)) + end)
 
     def erase_word(self, event: tk.Event):
         widget = t.cast(tk.Text, event.widget)

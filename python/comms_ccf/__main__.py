@@ -38,7 +38,7 @@ async def init_locals(console: Console, rpc: Rpc, debug: bool):
             await rpc.discover()
             break
         except TimeoutError:
-            await console.print(".", end="")
+            await console.print(".", end="", flush=True)
             await asyncio.sleep(0.2)
 
     locals = {k: v for k, v in rpc.methods().items()}
