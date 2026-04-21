@@ -24,7 +24,9 @@ class Rpc:
         """
         self._console = console
         self._channels = channels
-        self._methods: dict[str, t.Callable[..., t.Any]] = {"schema": self.schema}
+        self._methods = dict[str, t.Callable[..., t.Any]](
+            schema=self.schema, discover=self.discover
+        )
         self._doc = pydoc.TextDoc()
         self._seqNo = seqNo
 
