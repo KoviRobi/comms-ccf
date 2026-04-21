@@ -21,6 +21,8 @@ from asyncio import (
 )
 from enum import IntEnum
 
+from cobs.cobs import DecodeError
+
 from comms_ccf.transport import DEFAULT_TIMEOUT, Transport
 from comms_ccf.types import Console
 
@@ -65,7 +67,7 @@ class Channels:
                         "future messages ignored on channel", str(name)
                     )
                     self._channels[chan] = None
-            except TimeoutError:
+            except (TimeoutError, DecodeError):
                 pass
             except (IncompleteReadError, EOFError) as e:
                 self._exc = e
