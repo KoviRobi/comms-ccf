@@ -13,6 +13,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 
 from comms_ccf.channel import Channel, Channels
+from comms_ccf.events import add_event
 
 
 async def plotter(
@@ -32,6 +33,7 @@ async def plotter(
                 args.append(cbor2.load(argsIo))
         except cbor2.CBORDecodeEOF:
             pass
+        await add_event(Channel.Plot, *args)
         if len(args) == 2:
             await output(args[0], time.time(), args[1])
         elif len(args) == 3:

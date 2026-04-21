@@ -13,6 +13,7 @@ import cbor2
 from cobs.cobs import DecodeError
 
 from comms_ccf.channel import Channel, Channels
+from comms_ccf.events import add_event
 
 
 class LogLevel(Enum):
@@ -66,6 +67,7 @@ async def print_logs(
                     args.append(cbor2.load(argsIo))
             except cbor2.CBORDecodeEOF:
                 pass
+            await add_event(Channel.Log, *args)
             try:
                 formatted = msg.decode() % (*args,)
             except Exception:

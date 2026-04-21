@@ -51,7 +51,6 @@ class Rpc:
     async def discover(self, timeout: float = DEFAULT_TIMEOUT):
         self._channels.open_channel(Channel.RPC)
         self._schema = await self(0, [], timeout=timeout)
-        print("Schema", self._schema)
         assert isinstance(self._schema, list), "Bad schema"
         for index, fun in enumerate(self._schema, start=1):
             await self.add_function(index, *fun)

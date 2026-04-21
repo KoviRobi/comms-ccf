@@ -17,6 +17,8 @@ from typing import AsyncGenerator
 
 from comms_ccf.log import flush_logs
 from comms_ccf.types import Console
+from comms_ccf.channel import Channel
+from comms_ccf.events import add_event
 
 try:
     import readline
@@ -204,8 +206,10 @@ async def repl(console: Console, locals, debug=False):
         if not line:  # Empty line
             continue
         try:
+            await add_event(Channel.RPC, ">", line)
             result = await eval_expr(line, locals)
             locals["_"] = result
+            await add_event(Channel.RPC, "<", str(result))
             await console.print("out>", str(result))
         except Exception as e:
             await console.print(traceback.format_exc())

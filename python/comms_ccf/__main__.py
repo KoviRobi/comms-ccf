@@ -5,6 +5,7 @@ Connects to a socket, process, or serial port.
 """
 
 import asyncio
+import json
 import signal
 import sys
 import time
@@ -179,6 +180,7 @@ def quit(*args, **kwargs):
         console.close("Quit")
     if background_tasks:
         background_tasks.cancel()
+    print(json.dumps([time.time(), "exit"]))
     print("Bye")
 
 
