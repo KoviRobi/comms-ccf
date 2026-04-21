@@ -42,6 +42,8 @@ async def plotter(
 
 class Plot:
     def __init__(self) -> None:
+        self._start = None
+        self._target = None
         self._fig = Figure(figsize=(5, 4), dpi=100)
         self._data = {}
         self._q = janus.Queue()
@@ -87,8 +89,13 @@ class Plot:
     def _handle(self, cmd, args, kwargs) -> None:
         if cmd == "add":
             self._add(*args, **kwargs)
+        if cmd == "clear":
+            self._clear(*args, **kwargs)
 
     def _add(self, key, x, y) -> None:
+        if self._start is None:
+            self._start = x
+        x -= self._start
         entry = self._data.get(key)
         if entry:
             line, xs, ys = entry
@@ -97,20 +104,44 @@ class Plot:
             line.set_data(xs, ys)
             line.axes.relim()
             line.axes.autoscale_view()
+            if self._start:
+                if self._target:
+                    self._target.set_data([0, x], [40, 40])
+                else:
+                    (self._target,) = self._ax2.plot(
+                        [0, x], [40, 40], label="target"
+                    )
         else:
             xs = [x]
             ys = [y]
             if key in ["fpga", "ambient"]:
-                (line,) = self._ax2.plot(xs, ys, label=key)
+                (line,) = self._ax2.plot(xs, ys, label=key, linestyle="--")
             else:
-                (line,) = self._ax.plot(xs, ys, label=key)
+                (line,) = self._ax.plot(xs, ys, label=key, linestyle="-")
             self._fig.legend(draggable=True)
         self._data[key] = (line, xs, ys)
         self._fig.canvas.draw_idle()
         self._fig.canvas.flush_events()
 
+    def _clear(self, key: str | None = None) -> None:
+        if key and (entry := self._data.get(key)):
+            line = entry[0]
+            line.remove()
+            del self._data[key]
+        elif key is None:
+            self._start = None
+            for entry in self._data.values():
+                line = entry[0]
+                line.remove()
+            self._data = {}
+        self._fig.canvas.draw_idle()
+        self._fig.canvas.flush_events()
+
     async def add(self, *args, **kwargs) -> None:
         await self._q.async_q.put(("add", args, kwargs))
+
+    async def clear(self, *args, **kwargs) -> None:
+        await self._q.async_q.put(("clear", args, kwargs))
 
 
 if __name__ == "__main__":

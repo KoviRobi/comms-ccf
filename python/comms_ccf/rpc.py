@@ -58,6 +58,9 @@ class Rpc:
         "show the RPC schema"
         return self._schema
 
+    def add_method(self, name, method):
+        self._methods[name] = method
+
     async def add_function(self, index, name, doc, ret, *args):
         # Using default arguments is a workaround to using `index`
         # by value not reference

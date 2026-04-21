@@ -135,6 +135,7 @@ async def amain():
         # Plotting channel
         if tk_gui is not None and tk_gui.plot is not None:
             plot = tk_gui.plot
+            rpc.add_method("clear_plot", plot.clear)
 
             def plot_time(key, *args):
                 if len(args) == 1:
