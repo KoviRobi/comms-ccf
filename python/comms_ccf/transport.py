@@ -12,7 +12,7 @@ from fnv_hash_fast import fnv1a_32
 from comms_ccf.hexdump import hexdump
 
 # Float (seconds)
-DEFAULT_TIMEOUT = 0.5
+DEFAULT_TIMEOUT = 1.0
 
 # Channel index (1) + Checksum (4) + b"\0"
 MIN_PKT_SIZE = 6

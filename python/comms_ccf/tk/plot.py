@@ -44,7 +44,7 @@ class Plot:
     def __init__(self) -> None:
         self._start = None
         self._target = None
-        self._fig = Figure(figsize=(5, 4), dpi=100)
+        self._fig = Figure(figsize=(5, 4), dpi=72)
         self._data = {}
         self._q = janus.Queue()
         self._ax = self._fig.add_subplot()
@@ -102,40 +102,56 @@ class Plot:
             xs.append(x)
             ys.append(y)
             line.set_data(xs, ys)
+            if not line.axes:
+                if key in ["fpga", "smooth"]:
+                    self._ax2.add_artist(line)
+                else:
+                    self._ax.add_artist(line)
             line.axes.relim()
             line.axes.autoscale_view()
             if self._start:
-                if self._target:
+                if self._target and self._target.axes:
                     self._target.set_data([0, x], [40, 40])
+                elif self._target:
+                    self._ax2.add_artist(self._target)
                 else:
-                    (self._target,) = self._ax2.plot(
-                        [0, x], [40, 40], label="target"
-                    )
+                    (self._target,) = self._ax2.plot([0, x], [40, 40], label="target")
         else:
             xs = [x]
             ys = [y]
-            if key in ["fpga", "ambient"]:
+            if key in ["fpga", "smooth"]:
                 (line,) = self._ax2.plot(xs, ys, label=key, linestyle="--")
             else:
                 (line,) = self._ax.plot(xs, ys, label=key, linestyle="-")
-            self._fig.legend(draggable=True)
+            self._redraw()
         self._data[key] = (line, xs, ys)
+        self._redraw()
         self._fig.canvas.draw_idle()
         self._fig.canvas.flush_events()
 
-    def _clear(self, key: str | None = None) -> None:
-        if key and (entry := self._data.get(key)):
+    def _clear(self) -> None:
+        self._start = None
+        for key, entry in self._data.items():
             line = entry[0]
-            line.remove()
-            del self._data[key]
-        elif key is None:
-            self._start = None
-            for entry in self._data.values():
-                line = entry[0]
-                line.remove()
-            self._data = {}
+            line.set_data([], [])
+            self._data[key] = (line, [], [])
+        self._ax.clear()
+        self._ax2.clear()
+        self._redraw()
         self._fig.canvas.draw_idle()
         self._fig.canvas.flush_events()
+
+    def _redraw(self) -> None:
+        self._ax.set_xlabel("time / s")
+        self._ax.set_ylabel("fan / 255")
+        self._ax2.set_ylabel("temp / C")
+        self._ax2.yaxis.set_label_position("right")
+        lines = []
+        labels = []
+        for key, entry in self._data.items():
+            lines.append(entry[0])
+            labels.append(key)
+        self._ax.legend(lines, labels, loc="lower left")
 
     async def add(self, *args, **kwargs) -> None:
         await self._q.async_q.put(("add", args, kwargs))
